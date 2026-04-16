@@ -2,54 +2,92 @@ const axios = require('axios');
 
 const getLeetCodeData = async (username) => {
     try {
-        // Using a reliable open-source LeetCode stats API
-        // This is much more stable for cloud deployments like Render compared to direct GraphQL
-        const response = await axios.get(`https://leetcode-stats-api.herokuapp.com/${username}`);
-
-        if (response.data.status === 'success') {
-            return {
-                totalSolved: response.data.totalSolved,
-                easySolved: response.data.easySolved,
-                mediumSolved: response.data.mediumSolved,
-                hardSolved: response.data.hardSolved,
-                acceptanceRate: response.data.acceptanceRate,
-                ranking: response.data.ranking,
-                contributionPoints: response.data.contributionPoints,
-                reputation: response.data.reputation,
-                // The API doesn't provide the full calendar, but we can provide a dummy or empty one
-                // or just remove it if not needed for the main stats.
-                submissionCalendar: {} 
-            };
-        } else {
-            throw new Error(response.data.message || 'User not found on LeetCode');
-        }
-    } catch (error) {
-        console.warn(`LeetCode API failed for ${username}:`, error.message);
+        // 1. Fetch Basic Stats (Easy, Medium, Hard, Total)
+        const statsUrl = `https://leetcode-stats-api.herokuapp.com/${username}`;
+        const statsRes = await axios.get(statsUrl);
         
-        // Final fallback to a different proxy if herokuapp is down
+        if (statsRes.data.status !== 'success') {
+            throw new Error('User not found on LeetCode');
+        }
+
+        const stats = statsRes.data;
+
+        // 2. Fetch Contest Ranking & History (for Rating Graph)
+        // Using another stable proxy for contest data
+        let ratingGraph = [];
+        let contestsParticipated = 0;
+        let currentRating = 0;
+
         try {
-            const fallbackRes = await axios.get(`https://leetcode-api-faisalshohag.vercel.app/${username}`);
-            if (fallbackRes.data && fallbackRes.data.totalSolved !== undefined) {
-                return {
-                    totalSolved: fallbackRes.data.totalSolved,
-                    easySolved: fallbackRes.data.easySolved,
-                    mediumSolved: fallbackRes.data.mediumSolved,
-                    hardSolved: fallbackRes.data.hardSolved,
-                    ranking: fallbackRes.data.ranking,
-                    submissionCalendar: {}
-                };
+            const contestUrl = `https://alfa-leetcode-api.onrender.com/${username}/contest`;
+            const contestRes = await axios.get(contestUrl);
+            
+            if (contestRes.data && contestRes.data.contestRanking) {
+                currentRating = Math.round(contestRes.data.contestRanking.rating);
+                contestsParticipated = contestRes.data.contestRanking.attendedContestsCount;
+                
+                // Format the history for the graph
+                ratingGraph = (contestRes.data.contestHistory || [])
+                    .filter(entry => entry.attended)
+                    .map(entry => ({
+                        contestName: entry.contest.title,
+                        rating: Math.round(entry.rating),
+                        rank: entry.ranking,
+                        date: new Date(entry.contest.startTime * 1000).toISOString().split('T')[0]
+                    }));
             }
         } catch (err) {
-            console.error("All LeetCode fallbacks failed.");
+            console.warn("LeetCode Contest API failed, skipping rating graph:", err.message);
         }
 
+        // 3. Process Submission Calendar (for Solved Graph)
+        let solvedGraph = [];
+        let solvedThisYear = 0;
+        const currentYear = new Date().getFullYear();
+
+        if (stats.submissionCalendar) {
+            // submissionCalendar is { "timestamp": count, ... }
+            const calendar = stats.submissionCalendar;
+            const dailyData = Object.entries(calendar)
+                .map(([timestamp, count]) => {
+                    const date = new Date(parseInt(timestamp) * 1000);
+                    if (date.getFullYear() === currentYear) {
+                        solvedThisYear += count;
+                    }
+                    return {
+                        dateStr: date.toISOString().split('T')[0],
+                        count: count
+                    };
+                })
+                .sort((a, b) => new Date(a.dateStr) - new Date(b.dateStr));
+
+            // Last 30 days for graph
+            solvedGraph = dailyData.slice(-30).map(d => ({ date: d.dateStr, count: d.count }));
+        }
+
+        return {
+            totalSolved: stats.totalSolved,
+            easySolved: stats.easySolved,
+            mediumSolved: stats.mediumSolved,
+            hardSolved: stats.hardSolved,
+            acceptanceRate: stats.acceptanceRate,
+            ranking: stats.ranking,
+            rating: currentRating,
+            contestsParticipated,
+            solvedThisYear,
+            ratingGraph,
+            solvedGraph
+        };
+
+    } catch (error) {
+        console.warn(`LeetCode Service Error for ${username}:`, error.message);
         return {
             totalSolved: 0,
             easySolved: 0,
             mediumSolved: 0,
             hardSolved: 0,
             isMock: true,
-            error: "Could not fetch dynamic data"
+            message: "Failed to fetch dynamic data"
         };
     }
 };
