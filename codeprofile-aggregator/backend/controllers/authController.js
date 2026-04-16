@@ -6,7 +6,7 @@ const generateToken = require('../utils/generateToken');
 // @access  Public
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password, leetcodeUsername, codeforcesHandle, gfgUsername } = req.body;
+        const { name, email, password, leetcodeUsername, codeforcesHandle, gfgUsername, githubUsername } = req.body;
 
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -19,7 +19,8 @@ const registerUser = async (req, res) => {
             password,
             leetcodeUsername,
             codeforcesHandle,
-            gfgUsername
+            gfgUsername,
+            githubUsername
         });
 
         if (user) {

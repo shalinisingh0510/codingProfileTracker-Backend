@@ -26,6 +26,10 @@ const userSchema = mongoose.Schema({
     gfgUsername: {
         type: String,
         default: ""
+    },
+    githubUsername: {
+        type: String,
+        default: ""
     }
 }, {
     timestamps: true
