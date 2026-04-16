@@ -46,8 +46,18 @@ const getLeetCodeData = async (username) => {
         const currentYear = new Date().getFullYear();
 
         if (stats.submissionCalendar) {
-            // submissionCalendar is { "timestamp": count, ... }
-            const calendar = stats.submissionCalendar;
+            let calendar = stats.submissionCalendar;
+            
+            // Critical Fix: Often APIs return submissionCalendar as a JSON string
+            if (typeof calendar === 'string') {
+                try {
+                    calendar = JSON.parse(calendar);
+                } catch (e) {
+                    console.error("Failed to parse LeetCode submissionCalendar string:", e);
+                    calendar = {};
+                }
+            }
+
             const dailyData = Object.entries(calendar)
                 .map(([timestamp, count]) => {
                     const date = new Date(parseInt(timestamp) * 1000);
@@ -82,12 +92,13 @@ const getLeetCodeData = async (username) => {
     } catch (error) {
         console.warn(`LeetCode Service Error for ${username}:`, error.message);
         return {
+            error: true,
+            message: error.message,
             totalSolved: 0,
             easySolved: 0,
             mediumSolved: 0,
             hardSolved: 0,
-            isMock: true,
-            message: "Failed to fetch dynamic data"
+            isMock: true
         };
     }
 };

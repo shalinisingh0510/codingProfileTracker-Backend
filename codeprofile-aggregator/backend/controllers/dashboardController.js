@@ -50,10 +50,10 @@ const getDashboardData = async (req, res) => {
             totalSolved,
             averageProblemsPerDay,
             platforms: {
-                leetcode: leetcodeData || { message: "No handle provided" },
-                codeforces: codeforcesData || { message: "No handle provided" },
-                gfg: gfgData || { message: "No handle provided" },
-                github: githubData || { message: "No handle provided" }
+                leetcode: (leetcodeData && !leetcodeData.error) ? leetcodeData : { error: true, message: leetcodeData?.message || "No handle provided or data unavailable" },
+                codeforces: (codeforcesData && !codeforcesData.error) ? codeforcesData : { error: true, message: codeforcesData?.message || "No handle provided or data unavailable" },
+                gfg: (gfgData && !gfgData.error) ? gfgData : { error: true, message: gfgData?.message || "No handle provided or data unavailable" },
+                github: (githubData && !githubData.error) ? githubData : { error: true, message: githubData?.message || "No handle provided or data unavailable" }
             }
         });
 
