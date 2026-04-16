@@ -5,75 +5,65 @@ const getGfgData = async (username) => {
     try {
         const url = `https://www.geeksforgeeks.org/user/${username}/`;
         
-        // Add User-Agent to mimic a real browser to bypass basic scraping blocks
         const { data } = await axios.get(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml',
-                'Accept-Language': 'en-US,en;q=0.9'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             }
         });
 
         const $ = cheerio.load(data);
 
-        let codingScore = 0;
-        let problemsSolved = 0;
-        let streak = 0;
+        // GeeksforGeeks now uses Next.js. Most data is stored in the __NEXT_DATA__ script tag as JSON.
+        const nextDataScript = $('#__NEXT_DATA__').html();
+        
+        if (nextDataScript) {
+            try {
+                const jsonData = JSON.parse(nextDataScript);
+                const userInfo = jsonData.props.pageProps.userInfo;
 
-        // Scraper helper to search for labels dynamically in the DOM
-        const extractNumberForLabel = (labels) => {
-            let val = 0;
-            $('*').each(function () {
-                // Focus on elements that have no children (leaf nodes) to find exact text matches
-                if ($(this).children().length === 0) {
-                    const text = $(this).text().trim().toLowerCase();
-                    if (labels.includes(text)) {
-                        // Check sibling or parent text for the numbers
-                        const siblingText = $(this).next().text().trim();
-                        if (/^[\d,]+$/.test(siblingText)) {
-                            val = parseInt(siblingText.replace(/,/g, ''));
-                        } else {
-                            // If not in the direct sibling, check the parent text block
-                            const parentText = $(this).parent().text().replace(/,/g, '');
-                            const matches = parentText.match(/\d+/g);
-                            if (matches && matches.length > 0) {
-                                val = parseInt(matches[0]);
-                            }
-                        }
-                    }
+                if (userInfo) {
+                    return {
+                        codingScore: userInfo.pod_stats?.score || userInfo.total_score || 0,
+                        problemsSolved: userInfo.total_problems_solved || 0,
+                        streak: userInfo.pod_stats?.longest_streak || 0,
+                        rank: userInfo.rank || "N/A"
+                    };
                 }
-            });
-            return val;
-        };
-
-        codingScore = extractNumberForLabel(['overall coding score', 'coding score']);
-        problemsSolved = extractNumberForLabel(['total problem solved', 'problems solved']);
-        streak = extractNumberForLabel(['current streak', 'streak', 'max streak']);
-
-        // Check if parsing completely failed
-        if (codingScore === 0 && problemsSolved === 0 && streak === 0) {
-            console.warn(`[GfG Scraper] Found 0 for all stats on user ${username}. DOM might have changed or user has 0 stats.`);
+            } catch (err) {
+                console.error("Error parsing GfG NEXT_DATA:", err);
+            }
         }
 
-        return {
-            codingScore,
-            problemsSolved,
-            streak
-        };
+        // Fallback: If NEXT_DATA fails, try the older "practice profile" URL which is sometimes more stable for scraping
+        const practiceUrl = `https://auth.geeksforgeeks.org/user/${username}/practice/`;
+        const practiceResponse = await axios.get(practiceUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const $p = cheerio.load(practiceResponse.data);
+
+        const codingScore = parseInt($p('.score_card_value').eq(0).text()) || 0;
+        const totalSolved = parseInt($p('.score_card_value').eq(1).text()) || 0;
+        const streak = parseInt($p('.score_card_value').eq(2).text()) || 0;
+
+        if (codingScore > 0 || totalSolved > 0) {
+            return {
+                codingScore,
+                problemsSolved: totalSolved,
+                streak
+            };
+        }
+
+        throw new Error('Could not parse stats from GeeksforGeeks');
 
     } catch (error) {
-        if (error.response && error.response.status === 404) {
-            throw new Error('User not found on GeeksforGeeks');
-        }
-        
-        // Anti-bot detection / Request blocked fallback
-        console.warn("GeeksforGeeks scraping failed. Fallback to mock data. Error:", error.message);
+        console.warn("GeeksforGeeks scraping failed, returning mock fallback:", error.message);
         return {
-            codingScore: 1254,
-            problemsSolved: 342,
-            streak: 15,
+            codingScore: 0,
+            problemsSolved: 0,
+            streak: 0,
             isMock: true,
-            message: "Failed to scrape GeeksforGeeks, using mock data"
+            error: "Platform changed their layout, using fallback"
         };
     }
 };

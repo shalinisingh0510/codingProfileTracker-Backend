@@ -9,6 +9,9 @@ const cache = (durationInSeconds) => {
             : `__express__${req.originalUrl || req.url}`;
         
         try {
+            if (!redisClient.isReady) {
+                return next();
+            }
             const cachedResponse = await redisClient.get(key);
             
             if (cachedResponse) {
