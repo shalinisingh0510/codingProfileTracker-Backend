@@ -19,6 +19,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/codeforces', require('./routes/codeforcesRoutes'));
 app.use('/api/leetcode', require('./routes/leetcodeRoutes'));
+app.use('/api/gfg', require('./routes/gfgRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
 const PORT = process.env.PORT || 5000;
 
