@@ -35,7 +35,7 @@ const getDashboardData = async (req, res) => {
         const leetcodeSolved = leetcodeData && !leetcodeData.error ? leetcodeData.totalSolved : 0;
         const gfgSolved = gfgData && !gfgData.error ? gfgData.problemsSolved : 0;
         // Note: Codeforces API user.info doesn't return total problems solved, only ratings. 
-        const codeforcesSolved = 0; 
+        const codeforcesSolved = codeforcesData && !codeforcesData.error ? codeforcesData.totalSolved : 0; 
         
         const totalSolved = leetcodeSolved + gfgSolved + codeforcesSolved;
 
