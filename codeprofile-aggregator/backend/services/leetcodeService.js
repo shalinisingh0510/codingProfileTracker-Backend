@@ -2,79 +2,54 @@ const axios = require('axios');
 
 const getLeetCodeData = async (username) => {
     try {
-        const query = `
-            query getUserProfile($username: String!) {
-                matchedUser(username: $username) {
-                    submitStats: submitStatsGlobal {
-                        acSubmissionNum {
-                            difficulty
-                            count
-                        }
-                    }
-                }
-                userCalendar(username: $username) {
-                    submissionCalendar
-                }
-            }
-        `;
+        // Using a reliable open-source LeetCode stats API
+        // This is much more stable for cloud deployments like Render compared to direct GraphQL
+        const response = await axios.get(`https://leetcode-stats-api.herokuapp.com/${username}`);
 
-        const response = await axios.post('https://leetcode.com/graphql', {
-            query: query,
-            variables: { username }
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Referer': 'https://leetcode.com'
-            }
-        });
-
-        if (response.data.errors) {
-            throw new Error(response.data.errors[0].message || 'User not found');
+        if (response.data.status === 'success') {
+            return {
+                totalSolved: response.data.totalSolved,
+                easySolved: response.data.easySolved,
+                mediumSolved: response.data.mediumSolved,
+                hardSolved: response.data.hardSolved,
+                acceptanceRate: response.data.acceptanceRate,
+                ranking: response.data.ranking,
+                contributionPoints: response.data.contributionPoints,
+                reputation: response.data.reputation,
+                // The API doesn't provide the full calendar, but we can provide a dummy or empty one
+                // or just remove it if not needed for the main stats.
+                submissionCalendar: {} 
+            };
+        } else {
+            throw new Error(response.data.message || 'User not found on LeetCode');
         }
-
-        const matchedUser = response.data.data.matchedUser;
-        const userCalendar = response.data.data.userCalendar;
-
-        if (!matchedUser) {
-            throw new Error('User not found on LeetCode');
-        }
-
-        const stats = matchedUser.submitStats.acSubmissionNum;
-        
-        let totalSolved = 0;
-        let easySolved = 0;
-        let mediumSolved = 0;
-        let hardSolved = 0;
-
-        stats.forEach(stat => {
-            if (stat.difficulty === 'All') totalSolved = stat.count;
-            if (stat.difficulty === 'Easy') easySolved = stat.count;
-            if (stat.difficulty === 'Medium') mediumSolved = stat.count;
-            if (stat.difficulty === 'Hard') hardSolved = stat.count;
-        });
-
-        return {
-            totalSolved,
-            easySolved,
-            mediumSolved,
-            hardSolved,
-            submissionCalendar: JSON.parse(userCalendar.submissionCalendar || '{}')
-        };
     } catch (error) {
-        // Fallback to mock data if API limits us or we get forbidden/CORS error
-        console.warn("Leetcode API error detected or using mock fallback:", error.message);
+        console.warn(`LeetCode API failed for ${username}:`, error.message);
+        
+        // Final fallback to a different proxy if herokuapp is down
+        try {
+            const fallbackRes = await axios.get(`https://leetcode-api-faisalshohag.vercel.app/${username}`);
+            if (fallbackRes.data && fallbackRes.data.totalSolved !== undefined) {
+                return {
+                    totalSolved: fallbackRes.data.totalSolved,
+                    easySolved: fallbackRes.data.easySolved,
+                    mediumSolved: fallbackRes.data.mediumSolved,
+                    hardSolved: fallbackRes.data.hardSolved,
+                    ranking: fallbackRes.data.ranking,
+                    submissionCalendar: {}
+                };
+            }
+        } catch (err) {
+            console.error("All LeetCode fallbacks failed.");
+        }
+
         return {
-            totalSolved: 154,
-            easySolved: 80,
-            mediumSolved: 60,
-            hardSolved: 14,
-            submissionCalendar: {
-                "1711929600": 1,
-                "1712016000": 3,
-                "1712102400": 5
-            },
+            totalSolved: 0,
+            easySolved: 0,
+            mediumSolved: 0,
+            hardSolved: 0,
             isMock: true,
-            message: "Failed to fetch from LeetCode, using mock data"
+            error: "Could not fetch dynamic data"
         };
     }
 };
