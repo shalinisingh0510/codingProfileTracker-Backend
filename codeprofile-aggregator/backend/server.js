@@ -9,7 +9,10 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: ['https://coding-profile-tracker-frontend.vercel.app', 'http://localhost:5173'],
+    credentials: true
+}));
 app.use(express.json());
 
 // Routes
@@ -22,6 +25,15 @@ app.use('/api/leetcode', require('./routes/leetcodeRoutes'));
 app.use('/api/gfg', require('./routes/gfgRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        message: err.message || 'Internal Server Error',
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+});
 
 const PORT = process.env.PORT || 5000;
 
