@@ -1,4 +1,5 @@
 const axios = require('axios');
+const cheerio = require('cheerio');
 
 const getGithubData = async (username) => {
     try {
@@ -7,44 +8,62 @@ const getGithubData = async (username) => {
             headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
         }
 
-        // 1. Fetch Basic Profile & Repo Count
+        // 1. Fetch Basic Profile
         const userRes = await axios.get(`https://api.github.com/users/${username}`, { headers });
         const user = userRes.data;
 
-        // 2. Fetch PRs Count
-        const prsRes = await axios.get(`https://api.github.com/search/issues?q=author:${username}+type:pr`, { headers });
+        // 2. Fetch Stats concurrently
+        const [prsRes, issuesRes, contributionsRes] = await Promise.all([
+            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:pr`, { headers }).catch(() => ({ data: { total_count: 0 } })),
+            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:issue`, { headers }).catch(() => ({ data: { total_count: 0 } })),
+            axios.get(`https://github-contributions-api.deno.dev/${username}.json`).catch(() => ({ data: null }))
+        ]);
+
         const totalPRs = prsRes.data.total_count || 0;
-
-        // 3. Fetch Issues Count
-        const issuesRes = await axios.get(`https://api.github.com/search/issues?q=author:${username}+type:issue`, { headers });
         const totalIssues = issuesRes.data.total_count || 0;
-
-        // 4. Fetch Total Commits (Using search API for all commits by author)
-        // Note: Search commits API requires a specific media type
-        const commitsRes = await axios.get(`https://api.github.com/search/commits?q=author:${username}`, {
-            headers: {
-                ...headers,
-                'Accept': 'application/vnd.github.cloak-preview'
-            }
-        });
-        const totalCommits = commitsRes.data.total_count || 0;
-
-        // 5. Fetch Contribution Graph Data (Using a dedicated public proxy for full calendar)
+        
+        // 3. Process Contributions
         let contributionGraph = [];
-        try {
-            const contributionRes = await axios.get(`https://github-contributions-api.deno.dev/${username}.json`);
-            if (contributionRes.data && contributionRes.data.contributions) {
-                // Get last 30 days of contributions
-                const allContributions = contributionRes.data.contributions.flat();
+        let totalContributions = 0;
+        let contributionsLastYear = 0;
+        const currentYear = new Date().getFullYear();
+
+        if (contributionsRes.data) {
+            const data = contributionsRes.data;
+            
+            // Calculate total from data.total object if exists
+            if (data.total) {
+                totalContributions = Object.values(data.total).reduce((a, b) => a + b, 0);
+                contributionsLastYear = data.total[currentYear] || data.total[currentYear - 1] || 0;
+            }
+
+            // Get last 60 days of contributions for a more detailed graph
+            if (data.contributions) {
+                const allContributions = data.contributions.flat();
                 contributionGraph = allContributions
-                    .slice(-30)
+                    .slice(-60)
                     .map(day => ({
                         date: day.date,
                         count: day.contributionCount
                     }));
             }
+        }
+
+        // 4. Scrape Achievements
+        let achievements = [];
+        try {
+            const profileRes = await axios.get(`https://github.com/${username}`, {
+                headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+            const $ = cheerio.load(profileRes.data);
+            $('.achievement-badge-card img').each((i, el) => {
+                const alt = $(el).attr('alt');
+                if (alt && alt.startsWith('Achievement:')) {
+                    achievements.push(alt.replace('Achievement: ', ''));
+                }
+            });
         } catch (err) {
-            console.warn("GitHub Contribution Graph API failed:", err.message);
+            console.warn("GitHub Achievements scraping failed:", err.message);
         }
 
         return {
@@ -55,7 +74,9 @@ const getGithubData = async (username) => {
             followers: user.followers,
             totalPRs,
             totalIssues,
-            totalCommits,
+            totalContributions,
+            contributionsLastYear,
+            achievements: achievements.slice(0, 5), // Keep it concise
             contributionGraph
         };
 
