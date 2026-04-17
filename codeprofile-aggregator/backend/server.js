@@ -21,6 +21,7 @@ app.use('/api/codeforces', require('./routes/codeforcesRoutes'));
 app.use('/api/leetcode', require('./routes/leetcodeRoutes'));
 app.use('/api/gfg', require('./routes/gfgRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

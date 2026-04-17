@@ -30,6 +30,30 @@ const userSchema = mongoose.Schema({
     githubUsername: {
         type: String,
         default: ""
+    },
+    codechefUsername: {
+        type: String,
+        default: ""
+    },
+    hackerrankUsername: {
+        type: String,
+        default: ""
+    },
+    hackerearthUsername: {
+        type: String,
+        default: ""
+    },
+    profilePic: {
+        type: String,
+        default: ""
+    },
+    collegeName: {
+        type: String,
+        default: ""
+    },
+    skills: {
+        type: [String],
+        default: []
     }
 }, {
     timestamps: true
