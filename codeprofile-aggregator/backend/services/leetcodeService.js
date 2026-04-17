@@ -2,42 +2,45 @@ const axios = require('axios');
 
 const getLeetCodeData = async (username) => {
     try {
-        // 1. Fetch Basic Stats (Easy, Medium, Hard, Total)
-        const statsUrl = `https://leetcode-stats-api.herokuapp.com/${username}`;
-        const statsRes = await axios.get(statsUrl);
-        
-        if (statsRes.data.status !== 'success') {
-            throw new Error('User not found on LeetCode');
+        // 1. Fetch Basic Stats & Profile
+        const profileUrl = `https://alfa-leetcode-api.onrender.com/${username}`;
+        const solvedUrl = `https://alfa-leetcode-api.onrender.com/${username}/solved`;
+        const calendarUrl = `https://alfa-leetcode-api.onrender.com/${username}/calendar`;
+        const contestUrl = `https://alfa-leetcode-api.onrender.com/${username}/contest`;
+
+        // Fetching concurrently for performance
+        const [profileRes, solvedRes, calendarRes, contestRes] = await Promise.all([
+            axios.get(profileUrl).catch(() => ({ data: {} })),
+            axios.get(solvedUrl).catch(() => ({ data: {} })),
+            axios.get(calendarUrl).catch(() => ({ data: {} })),
+            axios.get(contestUrl).catch(() => ({ data: {} }))
+        ]);
+
+        if (!solvedRes.data || solvedRes.data.errors) {
+            throw new Error('User not found or LeetCode API error');
         }
 
-        const stats = statsRes.data;
+        const stats = solvedRes.data;
+        const profile = profileRes.data;
+        const calendarData = calendarRes.data;
 
-        // 2. Fetch Contest Ranking & History (for Rating Graph)
-        // Using another stable proxy for contest data
+        // 2. Process Contest Ranking & History
         let ratingGraph = [];
         let contestsParticipated = 0;
         let currentRating = 0;
 
-        try {
-            const contestUrl = `https://alfa-leetcode-api.onrender.com/${username}/contest`;
-            const contestRes = await axios.get(contestUrl);
+        if (contestRes.data && contestRes.data.contestRanking) {
+            currentRating = Math.round(contestRes.data.contestRanking.rating);
+            contestsParticipated = contestRes.data.contestRanking.attendedContestsCount;
             
-            if (contestRes.data && contestRes.data.contestRanking) {
-                currentRating = Math.round(contestRes.data.contestRanking.rating);
-                contestsParticipated = contestRes.data.contestRanking.attendedContestsCount;
-                
-                // Format the history for the graph
-                ratingGraph = (contestRes.data.contestHistory || [])
-                    .filter(entry => entry.attended)
-                    .map(entry => ({
-                        contestName: entry.contest.title,
-                        rating: Math.round(entry.rating),
-                        rank: entry.ranking,
-                        date: new Date(entry.contest.startTime * 1000).toISOString().split('T')[0]
-                    }));
-            }
-        } catch (err) {
-            console.warn("LeetCode Contest API failed, skipping rating graph:", err.message);
+            ratingGraph = (contestRes.data.contestHistory || [])
+                .filter(entry => entry.attended)
+                .map(entry => ({
+                    contestName: entry.contest.title,
+                    rating: Math.round(entry.rating),
+                    rank: entry.ranking,
+                    date: new Date(entry.contest.startTime * 1000).toISOString().split('T')[0]
+                }));
         }
 
         // 3. Process Submission Calendar (for Solved Graph)
@@ -45,15 +48,13 @@ const getLeetCodeData = async (username) => {
         let solvedThisYear = 0;
         const currentYear = new Date().getFullYear();
 
-        if (stats.submissionCalendar) {
-            let calendar = stats.submissionCalendar;
+        if (calendarData && calendarData.submissionCalendar) {
+            let calendar = calendarData.submissionCalendar;
             
-            // Critical Fix: Often APIs return submissionCalendar as a JSON string
             if (typeof calendar === 'string') {
                 try {
                     calendar = JSON.parse(calendar);
                 } catch (e) {
-                    console.error("Failed to parse LeetCode submissionCalendar string:", e);
                     calendar = {};
                 }
             }
@@ -76,12 +77,12 @@ const getLeetCodeData = async (username) => {
         }
 
         return {
-            totalSolved: stats.totalSolved,
-            easySolved: stats.easySolved,
-            mediumSolved: stats.mediumSolved,
-            hardSolved: stats.hardSolved,
-            acceptanceRate: stats.acceptanceRate,
-            ranking: stats.ranking,
+            totalSolved: stats.solvedProblem || 0,
+            easySolved: stats.easySolved || 0,
+            mediumSolved: stats.mediumSolved || 0,
+            hardSolved: stats.hardSolved || 0,
+            acceptanceRate: profile.acceptanceRate || 0,
+            ranking: profile.ranking || 'N/A',
             rating: currentRating,
             contestsParticipated,
             solvedThisYear,
