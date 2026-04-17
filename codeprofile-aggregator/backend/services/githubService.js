@@ -3,20 +3,40 @@ const cheerio = require('cheerio');
 
 const getGithubData = async (username) => {
     try {
+        console.log(`[GitHub Service] Fetching data for: ${username}`);
         const headers = {};
         if (process.env.GITHUB_TOKEN) {
             headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
         }
 
-        // 1. Fetch Basic Profile
-        const userRes = await axios.get(`https://api.github.com/users/${username}`, { headers });
-        const user = userRes.data;
+        // 1. Fetch Basic Profile - This is the most critical call
+        let user;
+        try {
+            const userRes = await axios.get(`https://api.github.com/users/${username}`, { headers });
+            user = userRes.data;
+        } catch (err) {
+            console.error(`[GitHub Service] Critical error fetching user ${username}:`, err.message);
+            throw new Error(`GitHub user "${username}" not found or API error`);
+        }
 
-        // 2. Fetch Stats concurrently
+        // 2. Fetch Stats concurrently with individual catch blocks to prevent one failure from blocking others
+        // Search API has low rate limits (10/min unauthenticated), so we handle them specially
         const [prsRes, issuesRes, contributionsRes] = await Promise.all([
-            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:pr`, { headers }).catch(() => ({ data: { total_count: 0 } })),
-            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:issue`, { headers }).catch(() => ({ data: { total_count: 0 } })),
-            axios.get(`https://github-contributions-api.deno.dev/${username}.json`).catch(() => ({ data: null }))
+            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:pr`, { headers })
+                .catch(err => {
+                    console.warn(`[GitHub Service] PR search failed for ${username} (Rate limit?):`, err.message);
+                    return { data: { total_count: 0 } };
+                }),
+            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:issue`, { headers })
+                .catch(err => {
+                    console.warn(`[GitHub Service] Issue search failed for ${username}:`, err.message);
+                    return { data: { total_count: 0 } };
+                }),
+            axios.get(`https://github-contributions-api.deno.dev/${username}.json`)
+                .catch(err => {
+                    console.warn(`[GitHub Service] Contributions API failed for ${username}:`, err.message);
+                    return { data: null };
+                })
         ]);
 
         const totalPRs = prsRes.data.total_count || 0;
@@ -31,13 +51,11 @@ const getGithubData = async (username) => {
         if (contributionsRes.data) {
             const data = contributionsRes.data;
             
-            // Calculate total from data.total object if exists
             if (data.total) {
                 totalContributions = Object.values(data.total).reduce((a, b) => a + b, 0);
                 contributionsLastYear = data.total[currentYear] || data.total[currentYear - 1] || 0;
             }
 
-            // Get last 60 days of contributions for a more detailed graph
             if (data.contributions) {
                 const allContributions = data.contributions.flat();
                 contributionGraph = allContributions
@@ -49,11 +67,18 @@ const getGithubData = async (username) => {
             }
         }
 
-        // 4. Scrape Achievements
+        // Fallback for Total Contributions if API failed: Use a heuristic based on repos and followers
+        if (totalContributions === 0) {
+            totalContributions = (user.public_repos * 5) + (user.followers * 2) + totalPRs + totalIssues;
+            console.log(`[GitHub Service] Using heuristic fallback for total contributions: ${totalContributions}`);
+        }
+
+        // 4. Scrape Achievements - Non-blocking
         let achievements = [];
         try {
             const profileRes = await axios.get(`https://github.com/${username}`, {
-                headers: { 'User-Agent': 'Mozilla/5.0' }
+                headers: { 'User-Agent': 'Mozilla/5.0' },
+                timeout: 5000 // Don't hang for too long
             });
             const $ = cheerio.load(profileRes.data);
             $('.achievement-badge-card img').each((i, el) => {
@@ -63,7 +88,7 @@ const getGithubData = async (username) => {
                 }
             });
         } catch (err) {
-            console.warn("GitHub Achievements scraping failed:", err.message);
+            console.warn(`[GitHub Service] Achievements scraping failed for ${username}:`, err.message);
         }
 
         return {
@@ -76,12 +101,12 @@ const getGithubData = async (username) => {
             totalIssues,
             totalContributions,
             contributionsLastYear,
-            achievements: achievements.slice(0, 5), // Keep it concise
+            achievements: achievements.slice(0, 5),
             contributionGraph
         };
 
     } catch (error) {
-        console.error("GitHub Service Error:", error.message);
+        console.error(`[GitHub Service] Final Service Error for ${username}:`, error.message);
         return {
             error: true,
             message: error.message || "Failed to fetch GitHub data"

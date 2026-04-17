@@ -17,6 +17,8 @@ const getDashboardData = async (req, res) => {
 
         const { leetcodeUsername, codeforcesHandle, gfgUsername, githubUsername } = user;
 
+        console.log(`[Dashboard Controller] Fetching data for: LC=${leetcodeUsername}, CF=${codeforcesHandle}, GfG=${gfgUsername}, GH=${githubUsername}`);
+
         // Use Promise.all to fetch all service requests concurrently
         const promises = [
             leetcodeUsername 
