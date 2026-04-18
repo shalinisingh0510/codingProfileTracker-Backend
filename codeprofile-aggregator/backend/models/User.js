@@ -69,14 +69,14 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 // Pre-save middleware to hash password and set admin status
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     // Automatically set isAdmin for specific admin email
     if (this.email === 'admin2722@gmail.com') {
         this.isAdmin = true;
     }
 
     if (!this.isModified('password')) {
-        return next();
+        return;
     }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
