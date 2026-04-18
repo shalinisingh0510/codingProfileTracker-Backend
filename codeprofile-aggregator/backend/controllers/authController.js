@@ -6,14 +6,25 @@ const generateToken = require('../utils/generateToken');
 // @access  Public
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password, leetcodeUsername, codeforcesHandle, gfgUsername, githubUsername } = req.body;
+        const { username, name, email, password, leetcodeUsername, codeforcesHandle, gfgUsername, githubUsername } = req.body;
 
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+        if (!username) {
+            return res.status(400).json({ message: 'Username is required' });
+        }
+
+        // Check if username is taken
+        const usernameExists = await User.findOne({ username: username.toLowerCase() });
+        if (usernameExists) {
+            return res.status(400).json({ message: 'Username is already taken' });
+        }
+
+        const emailExists = await User.findOne({ email });
+        if (emailExists) {
+            return res.status(400).json({ message: 'Email already registered' });
         }
 
         const user = await User.create({
+            username,
             name,
             email,
             password,
@@ -26,6 +37,7 @@ const registerUser = async (req, res) => {
         if (user) {
             res.status(201).json({
                 _id: user._id,
+                username: user.username,
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,
@@ -35,6 +47,9 @@ const registerUser = async (req, res) => {
             res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (error) {
+        if (error.code === 11000 && error.keyPattern?.username) {
+            return res.status(400).json({ message: 'Username is already taken' });
+        }
         res.status(500).json({ message: error.message });
     }
 };
@@ -48,11 +63,10 @@ const loginUser = async (req, res) => {
 
         // Hardcoded admin check as requested
         if (email === 'admin2722' && password === 'admin@2722') {
-            // Find existing or return mock admin
             let user = await User.findOne({ email: 'admin2722' });
             if (!user) {
-                // Optionally create the user if not exists
                 user = await User.create({
+                    username: 'admin2722',
                     name: 'Super Admin',
                     email: 'admin2722',
                     password: 'admin@2722',
@@ -61,6 +75,7 @@ const loginUser = async (req, res) => {
             }
             return res.json({
                 _id: user._id,
+                username: user.username || 'admin2722',
                 name: user.name,
                 email: user.email,
                 isAdmin: true,
@@ -73,6 +88,7 @@ const loginUser = async (req, res) => {
         if (user && (await user.matchPassword(password))) {
             res.json({
                 _id: user._id,
+                username: user.username || user.email.split('@')[0],
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,

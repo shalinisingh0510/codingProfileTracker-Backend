@@ -103,6 +103,7 @@ const getUserStatsHeader = async (req, res) => {
 
         res.json({
             user: {
+                username: user.username,
                 name: user.name,
                 email: user.email,
                 profilePic: user.profilePic,

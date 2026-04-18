@@ -70,6 +70,7 @@ const updateUserProfile = async (req, res) => {
 
             res.json({
                 _id: updatedUser._id,
+                username: updatedUser.username,
                 name: updatedUser.name,
                 email: updatedUser.email,
                 leetcodeUsername: updatedUser.leetcodeUsername,
@@ -108,7 +109,81 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
+// @desc    Get public profile by username
+// @route   GET /api/users/:username
+// @access  Public
+const getPublicProfile = async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.username.toLowerCase() })
+            .select('-password -email');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({
+            username: user.username,
+            name: user.name,
+            profilePic: user.profilePic,
+            collegeName: user.collegeName,
+            skills: user.skills,
+            handles: {
+                leetcode: user.leetcodeUsername,
+                codeforces: user.codeforcesHandle,
+                gfg: user.gfgUsername,
+                github: user.githubUsername,
+                codechef: user.codechefUsername,
+                hackerrank: user.hackerrankUsername,
+                hackerearth: user.hackerearthUsername
+            },
+            createdAt: user.createdAt
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Search users by username or name
+// @route   GET /api/users/search?q=query
+// @access  Public
+const searchUsers = async (req, res) => {
+    try {
+        const query = req.query.q;
+        if (!query || query.length < 2) {
+            return res.json([]);
+        }
+
+        const users = await User.find({
+            $or: [
+                { username: { $regex: query, $options: 'i' } },
+                { name: { $regex: query, $options: 'i' } }
+            ]
+        })
+        .select('username name profilePic collegeName')
+        .limit(10);
+
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Check if username is available
+// @route   GET /api/users/check-username/:username
+// @access  Public
+const checkUsername = async (req, res) => {
+    try {
+        const exists = await User.findOne({ username: req.params.username.toLowerCase() });
+        res.json({ available: !exists });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getUserProfile,
-    updateUserProfile
+    updateUserProfile,
+    getPublicProfile,
+    searchUsers,
+    checkUsername
 };
