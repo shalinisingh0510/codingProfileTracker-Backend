@@ -28,6 +28,7 @@ const registerUser = async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
+                isAdmin: user.isAdmin,
                 token: generateToken(user._id)
             });
         } else {
@@ -45,6 +46,28 @@ const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        // Hardcoded admin check as requested
+        if (email === 'admin2722' && password === 'admin@2722') {
+            // Find existing or return mock admin
+            let user = await User.findOne({ email: 'admin2722' });
+            if (!user) {
+                // Optionally create the user if not exists
+                user = await User.create({
+                    name: 'Super Admin',
+                    email: 'admin2722',
+                    password: 'admin@2722',
+                    isAdmin: true
+                });
+            }
+            return res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                isAdmin: true,
+                token: generateToken(user._id)
+            });
+        }
+
         const user = await User.findOne({ email });
 
         if (user && (await user.matchPassword(password))) {
@@ -52,6 +75,7 @@ const loginUser = async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
+                isAdmin: user.isAdmin,
                 token: generateToken(user._id)
             });
         } else {

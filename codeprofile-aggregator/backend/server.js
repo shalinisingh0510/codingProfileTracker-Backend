@@ -25,6 +25,7 @@ app.use('/api/leetcode', require('./routes/leetcodeRoutes'));
 app.use('/api/gfg', require('./routes/gfgRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/resources', require('./routes/resourceRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

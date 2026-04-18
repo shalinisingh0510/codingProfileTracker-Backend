@@ -54,6 +54,10 @@ const userSchema = mongoose.Schema({
     skills: {
         type: [String],
         default: []
+    },
+    isAdmin: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true
