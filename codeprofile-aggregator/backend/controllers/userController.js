@@ -21,9 +21,18 @@ const getUserProfile = async (req, res) => {
 // @access  Private
 const updateUserProfile = async (req, res) => {
     try {
+        console.log('Update Profile: Starting for user ID', req.user?._id);
+        
+        if (!req.user?._id) {
+            console.error('Update Profile Error: req.user._id is missing');
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
         const user = await User.findById(req.user._id);
 
         if (user) {
+            console.log('Update Profile: User found in database');
+            
             user.name = req.body.name || user.name;
             user.email = req.body.email || user.email;
             
@@ -42,6 +51,7 @@ const updateUserProfile = async (req, res) => {
             
             // Handle skills conversion if it's a string
             if (req.body.skills !== undefined) {
+                console.log('Update Profile: Handling skills conversion');
                 if (typeof req.body.skills === 'string') {
                     user.skills = req.body.skills.split(',').map(skill => skill.trim()).filter(skill => skill !== "");
                 } else {
@@ -50,10 +60,13 @@ const updateUserProfile = async (req, res) => {
             }
 
             if (req.body.password) {
+                console.log('Update Profile: Password update requested');
                 user.password = req.body.password;
             }
 
+            console.log('Update Profile: Attempting to save user...');
             const updatedUser = await user.save();
+            console.log('Update Profile: User saved successfully');
 
             res.json({
                 _id: updatedUser._id,
@@ -71,17 +84,27 @@ const updateUserProfile = async (req, res) => {
                 skills: updatedUser.skills
             });
         } else {
+            console.warn('Update Profile: User not found with ID', req.user._id);
             res.status(404).json({ message: 'User not found' });
         }
     } catch (error) {
-        console.error('Update Profile Error:', error);
+        console.error('Update Profile Error Trace:', error.stack || error);
         
         // Handle Mongoose duplicate key error (code 11000)
         if (error.code === 11000) {
             return res.status(400).json({ message: 'Email already exists' });
         }
 
-        res.status(500).json({ message: error.message || 'Internal Server Error' });
+        // Handle specific validation errors
+        if (error.name === 'ValidationError') {
+            const message = Object.values(error.errors).map(val => val.message).join(', ');
+            return res.status(400).json({ message });
+        }
+
+        res.status(500).json({ 
+            message: error.message || 'Internal Server Error',
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
 
