@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { getGfgUser } = require('../controllers/gfgController');
+const { getGithubUser } = require('../controllers/githubController');
 const cache = require('../middleware/cacheMiddleware');
 
-router.get('/:username', cache(1800), getGfgUser);
+router.get('/:username', cache(1800), getGithubUser);
 
 module.exports = router;

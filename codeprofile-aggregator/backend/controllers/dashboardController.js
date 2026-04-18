@@ -91,4 +91,40 @@ const getDashboardData = async (req, res) => {
     }
 };
 
-module.exports = { getDashboardData };
+// @desc    Get fast User Header data (Profile + Handles)
+// @route   GET /api/dashboard/user
+// @access  Private
+const getUserStatsHeader = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('-password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({
+            user: {
+                name: user.name,
+                email: user.email,
+                profilePic: user.profilePic,
+                collegeName: user.collegeName,
+                skills: user.skills
+            },
+            handles: {
+                leetcode: user.leetcodeUsername,
+                codeforces: user.codeforcesHandle,
+                gfg: user.gfgUsername,
+                github: user.githubUsername,
+                codechef: user.codechefUsername,
+                hackerrank: user.hackerrankUsername,
+                hackerearth: user.hackerearthUsername
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { 
+    getDashboardData,
+    getUserStatsHeader
+};
