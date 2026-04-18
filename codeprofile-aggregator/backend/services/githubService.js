@@ -4,51 +4,100 @@ const cheerio = require('cheerio');
 const getGithubData = async (username) => {
     try {
         console.log(`[GitHub Service] Fetching data for: ${username}`);
-        const headers = {};
-        if (process.env.GITHUB_TOKEN) {
-            headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
+        const token = process.env.GITHUB_TOKEN;
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+        // --- NEW: If Token is present, use GraphQL (Faster & More Accurate) ---
+        if (token) {
+            try {
+                const query = `
+                query($username: String!) {
+                  user(login: $username) {
+                    login
+                    avatarUrl
+                    bio
+                    followers { totalCount }
+                    repositories(first: 0) { totalCount }
+                    contributionsCollection {
+                      totalRepositoryContributions
+                      totalCommitContributions
+                      totalPullRequestContributions
+                      totalIssueContributions
+                      contributionCalendar {
+                        totalContributions
+                        weeks {
+                          contributionDays {
+                            contributionCount
+                            date
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`;
+                
+                const gqlRes = await axios.post('https://api.github.com/graphql', { 
+                    query, 
+                    variables: { username } 
+                }, { headers });
+
+                if (gqlRes.data.data && gqlRes.data.data.user) {
+                    const u = gqlRes.data.data.user;
+                    const cc = u.contributionsCollection;
+                    const cal = cc.contributionCalendar;
+                    
+                    const contributionGraph = cal.weeks.flatMap(w => w.contributionDays).slice(-60).map(d => ({
+                        date: d.date,
+                        count: d.contributionCount
+                    }));
+
+                    return {
+                        username: u.login,
+                        avatarUrl: u.avatarUrl,
+                        bio: u.bio,
+                        publicRepos: u.repositories.totalCount,
+                        followers: u.followers.totalCount,
+                        totalPRs: cc.totalPullRequestContributions,
+                        totalIssues: cc.totalIssueContributions,
+                        totalContributions: cal.totalContributions,
+                        contributionsLastYear: cal.totalContributions,
+                        achievements: [], 
+                        contributionGraph
+                    };
+                }
+            } catch (gqlErr) {
+                console.warn(`[GitHub Service] GraphQL failed, falling back to REST:`, gqlErr.message);
+            }
         }
 
-        // 1. Fetch Basic Profile - This is the most critical call
+        // --- REST Version (Improved with better fallbacks and bug fixes) ---
         let user;
         try {
-            const userRes = await axios.get(`https://api.github.com/users/${username}`, { headers });
+            const userRes = await axios.get(`https://api.github.com/users/${username}`, { headers: token ? { 'Authorization': `token ${token}` } : {} });
             user = userRes.data;
         } catch (err) {
             console.error(`[GitHub Service] Critical error fetching user ${username}:`, err.message);
             throw new Error(`GitHub user "${username}" not found or API error`);
         }
 
-        // 2. Fetch Stats concurrently with individual catch blocks to prevent one failure from blocking others
-        // Search API has low rate limits (10/min unauthenticated), so we handle them specially
         const [prsRes, issuesRes, contributionsRes] = await Promise.all([
-            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:pr`, { headers })
-                .catch(err => {
-                    console.warn(`[GitHub Service] PR search failed for ${username} (Rate limit?):`, err.message);
-                    return { data: { total_count: 0 } };
-                }),
-            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:issue`, { headers })
-                .catch(err => {
-                    console.warn(`[GitHub Service] Issue search failed for ${username}:`, err.message);
-                    return { data: { total_count: 0 } };
-                }),
-            axios.get(`https://github-contributions-api.deno.dev/${username}.json`)
-                .catch(err => {
-                    console.warn(`[GitHub Service] Contributions API failed for ${username}:`, err.message);
-                    return { data: null };
-                })
+            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:pr`, { headers: token ? { 'Authorization': `token ${token}` } : {} })
+                .catch(err => ({ data: { total_count: 0 } })),
+            axios.get(`https://api.github.com/search/issues?q=author:${username}+type:issue`, { headers: token ? { 'Authorization': `token ${token}` } : {} })
+                .catch(err => ({ data: { total_count: 0 } })),
+            axios.get(`https://github-contributions-api.deno.dev/${username}.json`).catch(() => ({ data: null }))
         ]);
 
-        const totalPRs = prsRes.data.total_count || 0;
-        const totalIssues = issuesRes.data.total_count || 0;
+        const totalPRs = prsRes.data?.total_count || 0;
+        const totalIssues = issuesRes.data?.total_count || 0;
         
-        // 3. Process Contributions
         let contributionGraph = [];
         let totalContributions = 0;
         let contributionsLastYear = 0;
         const currentYear = new Date().getFullYear();
 
-        if (contributionsRes.data) {
+        // FIX: Critical bug where it crashed if contributionsRes.data was null
+        if (contributionsRes && contributionsRes.data) {
             const data = contributionsRes.data;
             
             if (data.total) {
