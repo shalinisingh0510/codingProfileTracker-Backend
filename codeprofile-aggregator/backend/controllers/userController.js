@@ -39,7 +39,15 @@ const updateUserProfile = async (req, res) => {
             // Professional Details
             user.profilePic = req.body.profilePic ?? user.profilePic;
             user.collegeName = req.body.collegeName ?? user.collegeName;
-            user.skills = req.body.skills ?? user.skills;
+            
+            // Handle skills conversion if it's a string
+            if (req.body.skills !== undefined) {
+                if (typeof req.body.skills === 'string') {
+                    user.skills = req.body.skills.split(',').map(skill => skill.trim()).filter(skill => skill !== "");
+                } else {
+                    user.skills = req.body.skills;
+                }
+            }
 
             if (req.body.password) {
                 user.password = req.body.password;
@@ -66,7 +74,14 @@ const updateUserProfile = async (req, res) => {
             res.status(404).json({ message: 'User not found' });
         }
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Update Profile Error:', error);
+        
+        // Handle Mongoose duplicate key error (code 11000)
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
+
+        res.status(500).json({ message: error.message || 'Internal Server Error' });
     }
 };
 
