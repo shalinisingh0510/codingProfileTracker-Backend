@@ -30,6 +30,7 @@ app.use('/api/hackerearth', require('./routes/hackerearthRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/resources', require('./routes/resourceRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
