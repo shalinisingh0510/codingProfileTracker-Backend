@@ -75,25 +75,44 @@ const analyzeProfile = async (req, res) => {
         hackerrankData = sanitizeData(hackerrankData);
         hackerearthData = sanitizeData(hackerearthData);
 
-        const prompt = `You are an expert tech recruiter and AI profile analyzer. Analyze the following coding profile data for the user. 
-Provide a comprehensive report across Data Structures and Algorithms (DSA) questions and GitHub development.
-Please focus on the following points:
-1. Quality of DSA solved (analyze the ratio of easy, medium, and hard questions across platforms like LeetCode, CodeChef, Codeforces, GFG).
-2. Quality of dev work done on GitHub. Analyze total PRs, issues, public repos, followers, and overall contributions. Note any complex dev work or if the work is basic.
-3. Highlight important projects developed based on GitHub data (like the number of repositories and overall GitHub metrics).
-4. Give an overall rating or constructive feedback for the candidate.
+        const prompt = `You are a Principal Software Architect and elite Technical Recruiter evaluating a candidate's profile. You must generate a **highly comprehensive, detailed, and visually structured Markdown report** based on their Data Structures and Algorithms (DSA) profile and their GitHub open-source development activity.
 
-Keep the tone encouraging, professional, and detailed. Format the output in Markdown.
+Here are your exact requirements:
 
-Here is the data:
-User Info: ${user.name}, Skills: ${(user.skills || []).join(', ')}
+### 1. DSA Analysis & Rating
+- Evaluate the **quality of questions solved** across LeetCode, Codeforces, CodeChef, and GFG.
+- Analyze the ratio of easy, medium, and hard questions (if available).
+- Discuss contest ratings and rankings. Do they participate actively?
+- **Give a clear DSA Rating out of 10.** Provide a short justification for this specific score based on their stats.
+
+### 2. Development Analysis (GitHub)
+- **Complex Projects & Thinking Ability:** Look deeply at the \`topRepos\` data. Based on repo names, descriptions, languages, and topics, perform a detailed analysis of their complex projects. What do these projects imply about their thinking ability and system architecture skills?
+- **System Design & OOPs / SOLID Principles:** Speculate confidently on what complex system design patterns, OOP concepts, or SOLID principles they likely utilized in their top projects. If they built full-stack apps or scalable systems, explain the implied architecture.
+- **Tech & Skills Analysis:** Explicitly list and analyze the technologies they used (e.g., React, Next.js, Node.js, Python, Cloud, ML, AI, databases). How deep does their knowledge appear to be based on project complexity?
+- **Competitive Edge & Role Suitability:** Assess how competitive this student is. Are they more suitable for a **Frontend**, **Backend**, **Full Stack**, **ML/AI**, or **DevOps** role? Provide concrete reasons based on their tech stack.
+- **Highlight Complex Work:** Call out specific algorithms, system design components, or complex work they likely implemented in any of their repos. Don't be generic; use the repository descriptions and topics to anchor your praise.
+- **Give a clear Dev Rating out of 10.**
+
+### 3. Final Verdict
+- Give an overall assessment of their potential as an engineer.
+- Provide actionable, constructive feedback on what they should build or learn next to reach a 10/10 level.
+
+Keep the tone expert, objective, encouraging, and highly technical. Use Markdown extensively (headings, bullet points, bold text).
+
+Here is the candidate's data:
+**User Info:** ${user.name}
+**Self-Reported Skills:** ${(user.skills || []).join(', ')}
+
+**DSA Data:**
 LeetCode: ${JSON.stringify(leetcodeData)}
 Codeforces: ${JSON.stringify(codeforcesData)}
 GFG: ${JSON.stringify(gfgData)}
-GitHub: ${JSON.stringify(githubData)}
 CodeChef: ${JSON.stringify(codechefData)}
 HackerRank: ${JSON.stringify(hackerrankData)}
 HackerEarth: ${JSON.stringify(hackerearthData)}
+
+**GitHub Development Data:**
+${JSON.stringify(githubData)}
 `;
 
         const chatCompletion = await groq.chat.completions.create({

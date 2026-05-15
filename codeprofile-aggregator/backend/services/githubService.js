@@ -17,7 +17,16 @@ const getGithubData = async (username) => {
                     avatarUrl
                     bio
                     followers { totalCount }
-                    repositories(first: 0) { totalCount }
+                    repositories(first: 6, orderBy: {field: UPDATED_AT, direction: DESC}, isFork: false) { 
+                      totalCount 
+                      nodes {
+                        name
+                        description
+                        stargazerCount
+                        primaryLanguage { name }
+                        repositoryTopics(first: 3) { nodes { topic { name } } }
+                      }
+                    }
                     contributionsCollection {
                       totalRepositoryContributions
                       totalCommitContributions
@@ -51,6 +60,14 @@ const getGithubData = async (username) => {
                         count: d.contributionCount
                     }));
 
+                    const topRepos = u.repositories.nodes.map(repo => ({
+                        name: repo.name,
+                        description: repo.description,
+                        stars: repo.stargazerCount,
+                        language: repo.primaryLanguage?.name,
+                        topics: repo.repositoryTopics.nodes.map(n => n.topic.name)
+                    }));
+
                     return {
                         username: u.login,
                         avatarUrl: u.avatarUrl,
@@ -62,7 +79,8 @@ const getGithubData = async (username) => {
                         totalContributions: cal.totalContributions,
                         contributionsLastYear: cal.totalContributions,
                         achievements: [], 
-                        contributionGraph
+                        contributionGraph,
+                        topRepos
                     };
                 }
             } catch (gqlErr) {
@@ -80,17 +98,26 @@ const getGithubData = async (username) => {
             throw new Error(`GitHub user "${username}" not found or API error`);
         }
 
-        const [prsRes, issuesRes, contributionsRes] = await Promise.all([
+        const [prsRes, issuesRes, contributionsRes, reposRes] = await Promise.all([
             axios.get(`https://api.github.com/search/issues?q=author:${username}+type:pr`, { headers: token ? { 'Authorization': `token ${token}` } : {} })
                 .catch(err => ({ data: { total_count: 0 } })),
             axios.get(`https://api.github.com/search/issues?q=author:${username}+type:issue`, { headers: token ? { 'Authorization': `token ${token}` } : {} })
                 .catch(err => ({ data: { total_count: 0 } })),
-            axios.get(`https://github-contributions-api.deno.dev/${username}.json`).catch(() => ({ data: null }))
+            axios.get(`https://github-contributions-api.deno.dev/${username}.json`).catch(() => ({ data: null })),
+            axios.get(`https://api.github.com/users/${username}/repos?sort=updated&per_page=6&type=owner`, { headers: token ? { 'Authorization': `token ${token}` } : {} }).catch(() => ({ data: [] }))
         ]);
 
         const totalPRs = prsRes.data?.total_count || 0;
         const totalIssues = issuesRes.data?.total_count || 0;
         
+        const topRepos = (reposRes.data || []).filter(r => !r.fork).slice(0, 6).map(repo => ({
+            name: repo.name,
+            description: repo.description,
+            stars: repo.stargazers_count,
+            language: repo.language,
+            topics: repo.topics || []
+        }));
+
         let contributionGraph = [];
         let totalContributions = 0;
         let contributionsLastYear = 0;
@@ -151,7 +178,8 @@ const getGithubData = async (username) => {
             totalContributions,
             contributionsLastYear,
             achievements: achievements.slice(0, 5),
-            contributionGraph
+            contributionGraph,
+            topRepos
         };
 
     } catch (error) {
