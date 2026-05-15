@@ -103,7 +103,7 @@ HackerEarth: ${JSON.stringify(hackerearthData)}
                     content: prompt,
                 },
             ],
-            model: "llama3-8b-8192", 
+            model: "llama-3.1-8b-instant", 
         });
 
         const report = chatCompletion.choices[0]?.message?.content || "No report generated.";
