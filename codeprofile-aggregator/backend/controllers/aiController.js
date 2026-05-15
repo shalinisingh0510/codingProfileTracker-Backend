@@ -8,13 +8,18 @@ const { getHackerrankData } = require('../services/hackerrankService');
 const { getHackerearthData } = require('../services/hackerearthService');
 const Groq = require('groq-sdk');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 // @desc    Analyze user profile with AI
 // @route   GET /api/ai/analyze
 // @access  Private
 const analyzeProfile = async (req, res) => {
     try {
+        // Initialize Groq inside the function so if the key is missing at startup it doesn't crash the whole app
+        if (!process.env.GROQ_API_KEY) {
+            return res.status(500).json({ message: "GROQ_API_KEY is not configured on the server." });
+        }
+        
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
         const user = await User.findById(req.user._id);
 
         if (!user) {
@@ -41,7 +46,7 @@ const analyzeProfile = async (req, res) => {
             hackerearthUsername ? getHackerearthData(hackerearthUsername).catch(() => ({ error: true })) : Promise.resolve(null)
         ];
 
-        const [
+        let [
             leetcodeData, 
             codeforcesData, 
             gfgData, 
@@ -50,6 +55,25 @@ const analyzeProfile = async (req, res) => {
             hackerrankData,
             hackerearthData
         ] = await Promise.all(promises);
+
+        // Strip out large arrays (graphs) to save tokens and prevent API errors/timeouts
+        const sanitizeData = (data) => {
+            if (!data) return data;
+            const clean = { ...data };
+            delete clean.ratingGraph;
+            delete clean.solvedGraph;
+            delete clean.contributionGraph;
+            delete clean.badges; // Sometimes badges array is very large
+            return clean;
+        };
+
+        leetcodeData = sanitizeData(leetcodeData);
+        codeforcesData = sanitizeData(codeforcesData);
+        gfgData = sanitizeData(gfgData);
+        githubData = sanitizeData(githubData);
+        codechefData = sanitizeData(codechefData);
+        hackerrankData = sanitizeData(hackerrankData);
+        hackerearthData = sanitizeData(hackerearthData);
 
         const prompt = `You are an expert tech recruiter and AI profile analyzer. Analyze the following coding profile data for the user. 
 Provide a comprehensive report across Data Structures and Algorithms (DSA) questions and GitHub development.
@@ -62,7 +86,7 @@ Please focus on the following points:
 Keep the tone encouraging, professional, and detailed. Format the output in Markdown.
 
 Here is the data:
-User Info: ${user.name}, Skills: ${user.skills.join(', ')}
+User Info: ${user.name}, Skills: ${(user.skills || []).join(', ')}
 LeetCode: ${JSON.stringify(leetcodeData)}
 Codeforces: ${JSON.stringify(codeforcesData)}
 GFG: ${JSON.stringify(gfgData)}
