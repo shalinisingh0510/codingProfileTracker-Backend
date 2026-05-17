@@ -1,5 +1,14 @@
 const Resource = require('../models/Resource');
 
+// Helper to determine if a resource is free
+const checkIfFreeResource = (title) => {
+    if (!title) return false;
+    const titleLower = title.toLowerCase();
+    return titleLower.includes('striver') || 
+           titleLower.includes('fraz') || 
+           titleLower.includes('babbar');
+};
+
 // @desc    Get all resources
 // @route   GET /api/resources
 // @access  Public
@@ -22,8 +31,29 @@ const getResources = async (req, res) => {
             .skip(skip)
             .limit(limit);
 
+        // Check if current user is subscribed (plus or premium)
+        const userTier = req.user?.subscriptionTier || 'free';
+        const isSubscribed = ['plus', 'premium'].includes(userTier);
+
+        // Map resources: check paywall & sanitize content for locked resources
+        const mappedResources = resources.map(resource => {
+            const isFree = checkIfFreeResource(resource.title);
+            const isLocked = !isFree && !isSubscribed;
+
+            const resObj = resource.toObject();
+            resObj.isLocked = isLocked;
+
+            if (isLocked) {
+                // Secure scrub content so clients can't bypass via browser inspectors
+                resObj.content = '<p>🔒 <strong>Locked Content.</strong> Please upgrade to a Plus or Premium tier subscription to unlock this premium module.</p>';
+                resObj.link = null;
+            }
+
+            return resObj;
+        });
+
         res.json({
-            resources,
+            resources: mappedResources,
             page,
             pages: Math.ceil(count / limit),
             total: count
@@ -33,18 +63,28 @@ const getResources = async (req, res) => {
     }
 };
 
-
 // @desc    Get resource by ID
 // @route   GET /api/resources/:id
 // @access  Public
 const getResourceById = async (req, res) => {
     try {
         const resource = await Resource.findById(req.params.id).populate('author', 'name');
-        if (resource) {
-            res.json(resource);
-        } else {
-            res.status(404).json({ message: 'Resource not found' });
+        if (!resource) {
+            return res.status(404).json({ message: 'Resource not found' });
         }
+
+        const isFree = checkIfFreeResource(resource.title);
+        const userTier = req.user?.subscriptionTier || 'free';
+        const isSubscribed = ['plus', 'premium'].includes(userTier);
+
+        if (!isFree && !isSubscribed) {
+            return res.status(403).json({ 
+                message: 'This premium module is locked. Please upgrade to a Plus or Premium tier subscription to unlock.',
+                isLocked: true
+            });
+        }
+
+        res.json(resource);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

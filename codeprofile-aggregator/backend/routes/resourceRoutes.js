@@ -7,15 +7,15 @@ const {
     updateResource,
     deleteResource
 } = require('../controllers/resourceController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, optionalProtect } = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/adminMiddleware');
 
 router.route('/')
-    .get(getResources)
+    .get(optionalProtect, getResources)
     .post(protect, admin, createResource);
 
 router.route('/:id')
-    .get(getResourceById)
+    .get(optionalProtect, getResourceById)
     .put(protect, admin, updateResource)
     .delete(protect, admin, deleteResource);
 
