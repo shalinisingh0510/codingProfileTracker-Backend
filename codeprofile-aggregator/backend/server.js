@@ -9,8 +9,27 @@ connectDB();
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+    'https://coding-profile-tracker-frontend.vercel.app',
+    'http://localhost:5173'
+];
+
 app.use(cors({
-    origin: ['https://coding-profile-tracker-frontend.vercel.app', 'http://localhost:5173'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, server-to-server)
+        if (!origin) return callback(null, true);
+        
+        const isAllowed = allowedOrigins.includes(origin) || 
+                          origin.endsWith('.vercel.app') ||
+                          origin.startsWith('http://localhost:') ||
+                          origin.startsWith('http://127.0.0.1:');
+                          
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json());
