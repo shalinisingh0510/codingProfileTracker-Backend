@@ -127,6 +127,11 @@ ${JSON.stringify(githubData)}
 
         const report = chatCompletion.choices[0]?.message?.content || "No report generated.";
 
+        // Save report to User profile
+        user.lastAiReport = report;
+        user.lastAiReportCreatedAt = new Date();
+        await user.save();
+
         res.json({
             success: true,
             report: report
@@ -138,6 +143,23 @@ ${JSON.stringify(githubData)}
     }
 };
 
+const getLastReport = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json({
+            success: true,
+            report: user.lastAiReport,
+            createdAt: user.lastAiReportCreatedAt
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = { 
-    analyzeProfile
+    analyzeProfile,
+    getLastReport
 };

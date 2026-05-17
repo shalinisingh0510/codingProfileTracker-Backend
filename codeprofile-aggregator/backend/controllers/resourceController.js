@@ -1,4 +1,5 @@
 const Resource = require('../models/Resource');
+const User = require('../models/User');
 
 // Helper to determine if a resource is free
 const checkIfFreeResource = (title) => {
@@ -35,13 +36,24 @@ const getResources = async (req, res) => {
         const userTier = req.user?.subscriptionTier || 'free';
         const isSubscribed = ['plus', 'premium'].includes(userTier);
 
+        // Fetch actual User object to verify bookmarks
+        let userBookmarks = [];
+        if (req.user) {
+            const dbUser = await User.findById(req.user._id);
+            if (dbUser) {
+                userBookmarks = dbUser.bookmarks.map(id => id.toString());
+            }
+        }
+
         // Map resources: check paywall & sanitize content for locked resources
         const mappedResources = resources.map(resource => {
             const isFree = checkIfFreeResource(resource.title);
             const isLocked = !isFree && !isSubscribed;
+            const isBookmarked = userBookmarks.includes(resource._id.toString());
 
             const resObj = resource.toObject();
             resObj.isLocked = isLocked;
+            resObj.isBookmarked = isBookmarked;
 
             if (isLocked) {
                 // Secure scrub content so clients can't bypass via browser inspectors
@@ -84,7 +96,19 @@ const getResourceById = async (req, res) => {
             });
         }
 
-        res.json(resource);
+        // Check if bookmarked
+        let isBookmarked = false;
+        if (req.user) {
+            const dbUser = await User.findById(req.user._id);
+            if (dbUser) {
+                isBookmarked = dbUser.bookmarks.map(id => id.toString()).includes(resource._id.toString());
+            }
+        }
+
+        const resObj = resource.toObject();
+        resObj.isBookmarked = isBookmarked;
+
+        res.json(resObj);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -159,10 +183,165 @@ const deleteResource = async (req, res) => {
     }
 };
 
+// @desc    Toggle Bookmark for a resource
+// @route   POST /api/resources/:id/bookmark
+// @access  Private
+const toggleBookmark = async (req, res) => {
+    try {
+        const resourceId = req.params.id;
+        const user = await User.findById(req.user._id);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const stringBookmarks = user.bookmarks.map(id => id.toString());
+        const isBookmarked = stringBookmarks.includes(resourceId);
+
+        if (isBookmarked) {
+            user.bookmarks = user.bookmarks.filter(id => id.toString() !== resourceId);
+            await user.save();
+            res.json({ message: 'Resource removed from bookmarks', bookmarked: false });
+        } else {
+            user.bookmarks.push(resourceId);
+            await user.save();
+            res.json({ message: 'Resource added to bookmarks', bookmarked: true });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Record Reading History for a resource
+// @route   POST /api/resources/:id/read
+// @access  Private
+const recordReadingHistory = async (req, res) => {
+    try {
+        const resourceId = req.params.id;
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Filter out existing occurrences to ensure absolute uniqueness (no duplicates)
+        user.readingHistory = user.readingHistory.filter(id => id.toString() !== resourceId);
+        
+        // Push most recent to the front (unshift)
+        user.readingHistory.unshift(resourceId);
+        
+        // Cap history size to 50 items
+        if (user.readingHistory.length > 50) {
+            user.readingHistory = user.readingHistory.slice(0, 50);
+        }
+
+        await user.save();
+        res.json({ success: true, message: 'Reading history updated' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all bookmarked resources
+// @route   GET /api/resources/bookmarked
+// @access  Private
+const getBookmarkedResources = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).populate({
+            path: 'bookmarks',
+            populate: { path: 'author', select: 'name' }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check user subscription tier
+        const userTier = user.subscriptionTier || 'free';
+        const isSubscribed = ['plus', 'premium'].includes(userTier);
+
+        // Sanitize paywalled cards inside bookmarks
+        const sanitizedBookmarks = user.bookmarks.filter(resource => resource !== null).map(resource => {
+            const titleLower = resource.title.toLowerCase();
+            const isFree = titleLower.includes('striver') || 
+                           titleLower.includes('fraz') || 
+                           titleLower.includes('babbar');
+            
+            const isLocked = !isFree && !isSubscribed;
+            const resObj = resource.toObject();
+            resObj.isLocked = isLocked;
+            resObj.isBookmarked = true;
+
+            if (isLocked) {
+                resObj.content = '<p>🔒 <strong>Locked Content.</strong> Please upgrade to a Plus or Premium tier subscription to unlock this premium module.</p>';
+                resObj.link = null;
+            }
+            return resObj;
+        });
+
+        res.json(sanitizedBookmarks);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get reading history
+// @route   GET /api/resources/history
+// @access  Private
+const getReadingHistory = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).populate({
+            path: 'readingHistory',
+            populate: { path: 'author', select: 'name' }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check user subscription tier
+        const userTier = user.subscriptionTier || 'free';
+        const isSubscribed = ['plus', 'premium'].includes(userTier);
+
+        // Fetch actual User object to verify bookmarks
+        const dbUser = await User.findById(req.user._id);
+        const userBookmarks = dbUser ? dbUser.bookmarks.map(id => id.toString()) : [];
+
+        // Sanitize paywalled cards inside history
+        const sanitizedHistory = user.readingHistory.filter(resource => resource !== null).map(resource => {
+            const titleLower = resource.title.toLowerCase();
+            const isFree = titleLower.includes('striver') || 
+                           titleLower.includes('fraz') || 
+                           titleLower.includes('babbar');
+            
+            const isLocked = !isFree && !isSubscribed;
+            const isBookmarked = userBookmarks.includes(resource._id.toString());
+            
+            const resObj = resource.toObject();
+            resObj.isLocked = isLocked;
+            resObj.isBookmarked = isBookmarked;
+
+            if (isLocked) {
+                resObj.content = '<p>🔒 <strong>Locked Content.</strong> Please upgrade to a Plus or Premium tier subscription to unlock this premium module.</p>';
+                resObj.link = null;
+            }
+            return resObj;
+        });
+
+        res.json(sanitizedHistory);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getResources,
     getResourceById,
     createResource,
     updateResource,
-    deleteResource
+    deleteResource,
+    toggleBookmark,
+    recordReadingHistory,
+    getBookmarkedResources,
+    getReadingHistory
 };

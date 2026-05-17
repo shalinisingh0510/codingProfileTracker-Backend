@@ -95,6 +95,22 @@ const userSchema = mongoose.Schema({
     subscriptionUtr: {
         type: String,
         default: null
+    },
+    bookmarks: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Resource'
+    }],
+    readingHistory: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Resource'
+    }],
+    lastAiReport: {
+        type: String,
+        default: null
+    },
+    lastAiReportCreatedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true
