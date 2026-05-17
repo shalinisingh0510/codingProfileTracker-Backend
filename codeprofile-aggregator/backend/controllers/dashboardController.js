@@ -70,7 +70,11 @@ const getDashboardData = async (req, res) => {
                 email: user.email,
                 profilePic: user.profilePic,
                 collegeName: user.collegeName,
-                skills: user.skills
+                skills: user.skills,
+                subscriptionTier: user.subscriptionTier,
+                subscriptionPlan: user.subscriptionPlan,
+                subscriptionStatus: user.subscriptionStatus,
+                subscriptionExpiresAt: user.subscriptionExpiresAt
             },
             totalSolved,
             averageProblemsPerDay,
@@ -108,7 +112,11 @@ const getUserStatsHeader = async (req, res) => {
                 email: user.email,
                 profilePic: user.profilePic,
                 collegeName: user.collegeName,
-                skills: user.skills
+                skills: user.skills,
+                subscriptionTier: user.subscriptionTier,
+                subscriptionPlan: user.subscriptionPlan,
+                subscriptionStatus: user.subscriptionStatus,
+                subscriptionExpiresAt: user.subscriptionExpiresAt
             },
             handles: {
                 leetcode: user.leetcodeUsername,

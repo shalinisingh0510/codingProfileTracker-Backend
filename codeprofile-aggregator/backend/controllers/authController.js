@@ -43,6 +43,10 @@ const registerUser = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,
+                subscriptionTier: user.subscriptionTier,
+                subscriptionPlan: user.subscriptionPlan,
+                subscriptionStatus: user.subscriptionStatus,
+                subscriptionExpiresAt: user.subscriptionExpiresAt,
                 token: generateToken(user._id)
             });
         } else {
@@ -94,6 +98,10 @@ const loginUser = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 isAdmin: user.isAdmin,
+                subscriptionTier: user.subscriptionTier,
+                subscriptionPlan: user.subscriptionPlan,
+                subscriptionStatus: user.subscriptionStatus,
+                subscriptionExpiresAt: user.subscriptionExpiresAt,
                 token: generateToken(user._id)
             });
         } else {

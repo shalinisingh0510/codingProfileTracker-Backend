@@ -73,6 +73,24 @@ const userSchema = mongoose.Schema({
     passwordResetExpires: {
         type: Date,
         default: null
+    },
+    subscriptionTier: {
+        type: String,
+        enum: ['free', 'plus', 'premium'],
+        default: 'free'
+    },
+    subscriptionPlan: {
+        type: String,
+        default: null
+    },
+    subscriptionStatus: {
+        type: String,
+        enum: ['none', 'active', 'cancelled', 'expired'],
+        default: 'none'
+    },
+    subscriptionExpiresAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

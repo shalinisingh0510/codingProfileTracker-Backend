@@ -82,7 +82,11 @@ const updateUserProfile = async (req, res) => {
                 hackerearthUsername: updatedUser.hackerearthUsername,
                 profilePic: updatedUser.profilePic,
                 collegeName: updatedUser.collegeName,
-                skills: updatedUser.skills
+                skills: updatedUser.skills,
+                subscriptionTier: updatedUser.subscriptionTier,
+                subscriptionPlan: updatedUser.subscriptionPlan,
+                subscriptionStatus: updatedUser.subscriptionStatus,
+                subscriptionExpiresAt: updatedUser.subscriptionExpiresAt
             });
         } else {
             console.warn('Update Profile: User not found with ID', req.user._id);
