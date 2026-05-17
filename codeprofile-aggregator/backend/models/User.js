@@ -91,6 +91,10 @@ const userSchema = mongoose.Schema({
     subscriptionExpiresAt: {
         type: Date,
         default: null
+    },
+    subscriptionUtr: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true
