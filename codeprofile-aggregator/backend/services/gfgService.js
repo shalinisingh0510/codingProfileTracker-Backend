@@ -5,52 +5,61 @@ const getGfgData = async (username) => {
     try {
         const url = `https://www.geeksforgeeks.org/user/${username}/`;
         
-        const { data } = await axios.get(url, {
+        const { data: html } = await axios.get(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             }
         });
 
-        const $ = cheerio.load(data);
-
-        // GeeksforGeeks now uses Next.js. Most data is stored in the __NEXT_DATA__ script tag as JSON.
-        const nextDataScript = $('#__NEXT_DATA__').html();
-        
-        if (nextDataScript) {
-            try {
-                const jsonData = JSON.parse(nextDataScript);
-                const userInfo = jsonData.props.pageProps.userInfo;
-
-                if (userInfo) {
-                    return {
-                        codingScore: userInfo.pod_stats?.score || userInfo.total_score || 0,
-                        problemsSolved: userInfo.total_problems_solved || 0,
-                        streak: userInfo.pod_stats?.longest_streak || 0,
-                        rank: userInfo.rank || "N/A"
-                    };
+        // 1. Try to find and parse the userData block from the Next.js RSC payload
+        const cleanHtml = html.replace(/\\"/g, '"');
+        const startIdx = cleanHtml.indexOf('"userData"');
+        if (startIdx !== -1) {
+            const braceStart = cleanHtml.indexOf('{', startIdx);
+            if (braceStart !== -1) {
+                let braceCount = 0;
+                let jsonStr = "";
+                for (let i = braceStart; i < cleanHtml.length; i++) {
+                    const char = cleanHtml[i];
+                    jsonStr += char;
+                    if (char === '{') {
+                        braceCount++;
+                    } else if (char === '}') {
+                        braceCount--;
+                        if (braceCount === 0) {
+                            break;
+                        }
+                    }
                 }
-            } catch (err) {
-                console.error("Error parsing GfG NEXT_DATA:", err);
+                
+                if (jsonStr) {
+                    const userData = JSON.parse(jsonStr);
+                    const userInfo = userData.data;
+                    if (userInfo) {
+                        return {
+                            codingScore: userInfo.score || 0,
+                            problemsSolved: userInfo.total_problems_solved || 0,
+                            streak: userInfo.pod_solved_longest_streak || 0,
+                            rank: userInfo.institute_rank || "N/A"
+                        };
+                    }
+                }
             }
         }
 
-        // Fallback: If NEXT_DATA fails, try the older "practice profile" URL which is sometimes more stable for scraping
-        const practiceUrl = `https://auth.geeksforgeeks.org/user/${username}/practice/`;
-        const practiceResponse = await axios.get(practiceUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-        const $p = cheerio.load(practiceResponse.data);
+        // 2. Fallback: robust regex parsing directly from the HTML
+        const scoreMatch = html.match(/\\?"score\\?":\s*(\d+)/);
+        const solvedMatch = html.match(/\\?"total_problems_solved\\?":\s*(\d+)/);
+        const streakMatch = html.match(/\\?"pod_solved_longest_streak\\?":\s*(\d+)/);
+        const rankMatch = html.match(/\\?"institute_rank\\?":\s*(\d+)/);
 
-        const codingScore = parseInt($p('.score_card_value').eq(0).text()) || 0;
-        const totalSolved = parseInt($p('.score_card_value').eq(1).text()) || 0;
-        const streak = parseInt($p('.score_card_value').eq(2).text()) || 0;
-
-        if (codingScore > 0 || totalSolved > 0) {
+        if (scoreMatch || solvedMatch) {
             return {
-                codingScore,
-                problemsSolved: totalSolved,
-                streak
+                codingScore: scoreMatch ? parseInt(scoreMatch[1]) : 0,
+                problemsSolved: solvedMatch ? parseInt(solvedMatch[1]) : 0,
+                streak: streakMatch ? parseInt(streakMatch[1]) : 0,
+                rank: rankMatch ? rankMatch[1] : "N/A"
             };
         }
 

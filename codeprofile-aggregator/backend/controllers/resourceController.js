@@ -6,17 +6,33 @@ const Resource = require('../models/Resource');
 const getResources = async (req, res) => {
     try {
         const { category } = req.query;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 9;
+        const skip = (page - 1) * limit;
+
         let query = {};
         if (category && category !== 'All') {
             query.category = category;
         }
         
-        const resources = await Resource.find(query).populate('author', 'name').sort({ createdAt: -1 });
-        res.json(resources);
+        const count = await Resource.countDocuments(query);
+        const resources = await Resource.find(query)
+            .populate('author', 'name')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            resources,
+            page,
+            pages: Math.ceil(count / limit),
+            total: count
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 // @desc    Get resource by ID
 // @route   GET /api/resources/:id
