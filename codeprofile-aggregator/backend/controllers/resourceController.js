@@ -114,12 +114,21 @@ const getResourceById = async (req, res) => {
     }
 };
 
-// @desc    Get resource by slug
+// @desc    Get resource by slug (or _id fallback)
 // @route   GET /api/resources/slug/:slug
 // @access  Public
 const getResourceBySlug = async (req, res) => {
     try {
-        const resource = await Resource.findOne({ slug: req.params.slug }).populate('author', 'name');
+        const identifier = req.params.slug;
+        let query = { slug: identifier };
+        
+        // If identifier is a valid ObjectId, allow fallback
+        const mongoose = require('mongoose');
+        if (mongoose.Types.ObjectId.isValid(identifier)) {
+            query = { $or: [{ slug: identifier }, { _id: identifier }] };
+        }
+
+        const resource = await Resource.findOne(query).populate('author', 'name');
         if (!resource) {
             return res.status(404).json({ message: 'Resource not found' });
         }
