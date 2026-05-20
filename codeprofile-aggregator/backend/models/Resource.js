@@ -5,6 +5,11 @@ const resourceSchema = mongoose.Schema({
         type: String,
         required: true
     },
+    slug: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
     category: {
         type: String,
         required: true,
@@ -34,6 +39,28 @@ const resourceSchema = mongoose.Schema({
     }
 }, {
     timestamps: true
+});
+
+// Auto-generate slug from title before saving
+resourceSchema.pre('save', async function () {
+    if (this.isModified('title') || !this.slug) {
+        let base = this.title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .substring(0, 80);
+        
+        let candidate = base;
+        let counter = 1;
+        
+        // Check for collisions (skip self when updating)
+        while (await mongoose.model('Resource').findOne({ slug: candidate, _id: { $ne: this._id } })) {
+            candidate = `${base}-${counter}`;
+            counter++;
+        }
+        this.slug = candidate;
+    }
 });
 
 const Resource = mongoose.model('Resource', resourceSchema);

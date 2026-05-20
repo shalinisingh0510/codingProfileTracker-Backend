@@ -3,20 +3,24 @@ const router = express.Router();
 const {
     getResources,
     getResourceById,
+    getResourceBySlug,
     createResource,
     updateResource,
     deleteResource,
     toggleBookmark,
     recordReadingHistory,
     getBookmarkedResources,
-    getReadingHistory
+    getReadingHistory,
+    backfillSlugs
 } = require('../controllers/resourceController');
 const { protect, optionalProtect } = require('../middleware/authMiddleware');
 const { admin } = require('../middleware/adminMiddleware');
 
-// Get bookmarks and history (placed BEFORE /:id to avoid ID collision)
+// Static routes first (before /:id to avoid collision)
 router.route('/bookmarked').get(protect, getBookmarkedResources);
 router.route('/history').get(protect, getReadingHistory);
+router.route('/backfill-slugs').post(protect, admin, backfillSlugs);
+router.route('/slug/:slug').get(optionalProtect, getResourceBySlug);
 
 router.route('/')
     .get(optionalProtect, getResources)

@@ -41,7 +41,7 @@ const getResources = async (req, res) => {
         if (req.user) {
             const dbUser = await User.findById(req.user._id);
             if (dbUser) {
-                userBookmarks = dbUser.bookmarks.map(id => id.toString());
+                userBookmarks = dbUser.bookmarks.filter(id => id).map(id => id.toString());
             }
         }
 
@@ -75,7 +75,7 @@ const getResources = async (req, res) => {
     }
 };
 
-// @desc    Get resource by ID
+// @desc    Get resource by MongoDB ID
 // @route   GET /api/resources/:id
 // @access  Public
 const getResourceById = async (req, res) => {
@@ -101,7 +101,46 @@ const getResourceById = async (req, res) => {
         if (req.user) {
             const dbUser = await User.findById(req.user._id);
             if (dbUser) {
-                isBookmarked = dbUser.bookmarks.map(id => id.toString()).includes(resource._id.toString());
+                isBookmarked = dbUser.bookmarks.filter(id => id).map(id => id.toString()).includes(resource._id.toString());
+            }
+        }
+
+        const resObj = resource.toObject();
+        resObj.isBookmarked = isBookmarked;
+
+        res.json(resObj);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get resource by slug
+// @route   GET /api/resources/slug/:slug
+// @access  Public
+const getResourceBySlug = async (req, res) => {
+    try {
+        const resource = await Resource.findOne({ slug: req.params.slug }).populate('author', 'name');
+        if (!resource) {
+            return res.status(404).json({ message: 'Resource not found' });
+        }
+
+        const isFree = checkIfFreeResource(resource.title);
+        const userTier = req.user?.subscriptionTier || 'free';
+        const isSubscribed = ['plus', 'premium'].includes(userTier);
+
+        if (!isFree && !isSubscribed) {
+            return res.status(403).json({ 
+                message: 'This premium module is locked. Please upgrade to a Plus or Premium tier subscription to unlock.',
+                isLocked: true
+            });
+        }
+
+        // Check if bookmarked
+        let isBookmarked = false;
+        if (req.user) {
+            const dbUser = await User.findById(req.user._id);
+            if (dbUser) {
+                isBookmarked = dbUser.bookmarks.filter(id => id).map(id => id.toString()).includes(resource._id.toString());
             }
         }
 
@@ -262,11 +301,7 @@ const getBookmarkedResources = async (req, res) => {
 
         // Sanitize paywalled cards inside bookmarks
         const sanitizedBookmarks = user.bookmarks.filter(resource => resource !== null).map(resource => {
-            const titleLower = resource.title.toLowerCase();
-            const isFree = titleLower.includes('striver') || 
-                           titleLower.includes('fraz') || 
-                           titleLower.includes('babbar');
-            
+            const isFree = checkIfFreeResource(resource.title);
             const isLocked = !isFree && !isSubscribed;
             const resObj = resource.toObject();
             resObj.isLocked = isLocked;
@@ -303,17 +338,11 @@ const getReadingHistory = async (req, res) => {
         const userTier = user.subscriptionTier || 'free';
         const isSubscribed = ['plus', 'premium'].includes(userTier);
 
-        // Fetch actual User object to verify bookmarks
-        const dbUser = await User.findById(req.user._id);
-        const userBookmarks = dbUser ? dbUser.bookmarks.map(id => id.toString()) : [];
+        const userBookmarks = user.bookmarks.filter(id => id).map(id => id.toString());
 
         // Sanitize paywalled cards inside history
         const sanitizedHistory = user.readingHistory.filter(resource => resource !== null).map(resource => {
-            const titleLower = resource.title.toLowerCase();
-            const isFree = titleLower.includes('striver') || 
-                           titleLower.includes('fraz') || 
-                           titleLower.includes('babbar');
-            
+            const isFree = checkIfFreeResource(resource.title);
             const isLocked = !isFree && !isSubscribed;
             const isBookmarked = userBookmarks.includes(resource._id.toString());
             
@@ -334,14 +363,33 @@ const getReadingHistory = async (req, res) => {
     }
 };
 
+// @desc    Backfill slugs for all resources that don't have one
+// @route   POST /api/resources/backfill-slugs
+// @access  Private/Admin
+const backfillSlugs = async (req, res) => {
+    try {
+        const resources = await Resource.find({ $or: [{ slug: null }, { slug: '' }, { slug: { $exists: false } }] });
+        let updated = 0;
+        for (const resource of resources) {
+            await resource.save(); // triggers pre-save hook which generates slug
+            updated++;
+        }
+        res.json({ message: `Backfilled slugs for ${updated} resources` });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getResources,
     getResourceById,
+    getResourceBySlug,
     createResource,
     updateResource,
     deleteResource,
     toggleBookmark,
     recordReadingHistory,
     getBookmarkedResources,
-    getReadingHistory
+    getReadingHistory,
+    backfillSlugs
 };
