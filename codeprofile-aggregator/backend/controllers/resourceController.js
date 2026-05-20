@@ -10,12 +10,15 @@ const checkIfFreeResource = (title) => {
            titleLower.includes('babbar');
 };
 
+const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // @desc    Get all resources
 // @route   GET /api/resources
 // @access  Public
 const getResources = async (req, res) => {
     try {
         const { category } = req.query;
+        const searchQuery = String(req.query.q || '').trim();
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 9;
         const skip = (page - 1) * limit;
@@ -24,13 +27,20 @@ const getResources = async (req, res) => {
         if (category && category !== 'All') {
             query.category = category;
         }
+
+        if (searchQuery) {
+            const searchRegex = new RegExp(escapeRegex(searchQuery), 'i');
+            query.$or = [
+                { title: searchRegex },
+                { description: searchRegex },
+                { tags: searchRegex },
+                { category: searchRegex }
+            ];
+        }
         
-        const count = await Resource.countDocuments(query);
         const resources = await Resource.find(query)
             .populate('author', 'name')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
+            .sort({ createdAt: -1 });
 
         // Check if current user is subscribed (plus or premium)
         const userTier = req.user?.subscriptionTier || 'free';
@@ -45,13 +55,28 @@ const getResources = async (req, res) => {
             }
         }
 
+        const orderedResources = [...resources].sort((left, right) => {
+            const leftFree = checkIfFreeResource(left.title);
+            const rightFree = checkIfFreeResource(right.title);
+
+            if (leftFree === rightFree) {
+                return 0;
+            }
+
+            return leftFree ? -1 : 1;
+        });
+
+        const count = orderedResources.length;
+        const paginatedResources = orderedResources.slice(skip, skip + limit);
+
         // Map resources: check paywall & sanitize content for locked resources
-        const mappedResources = resources.map(resource => {
+        const mappedResources = paginatedResources.map(resource => {
             const isFree = checkIfFreeResource(resource.title);
             const isLocked = !isFree && !isSubscribed;
             const isBookmarked = userBookmarks.includes(resource._id.toString());
 
             const resObj = resource.toObject();
+            resObj.isFree = isFree;
             resObj.isLocked = isLocked;
             resObj.isBookmarked = isBookmarked;
 
