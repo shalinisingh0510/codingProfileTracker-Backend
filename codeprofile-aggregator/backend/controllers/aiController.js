@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const AiReport = require('../models/AiReport');
+const Resource = require('../models/Resource');
 const { getCodeforcesData } = require('../services/codeforcesService');
 const { getLeetCodeData } = require('../services/leetcodeService');
 const { getGfgData } = require('../services/gfgService');
@@ -13,7 +15,6 @@ const Groq = require('groq-sdk');
 // @access  Private
 const analyzeProfile = async (req, res) => {
     try {
-        // Initialize Groq inside the function so if the key is missing at startup it doesn't crash the whole app
         if (!process.env.GROQ_API_KEY) {
             return res.status(500).json({ message: "GROQ_API_KEY is not configured on the server." });
         }
@@ -56,14 +57,13 @@ const analyzeProfile = async (req, res) => {
             hackerearthData
         ] = await Promise.all(promises);
 
-        // Strip out large arrays (graphs) to save tokens and prevent API errors/timeouts
         const sanitizeData = (data) => {
             if (!data) return data;
             const clean = { ...data };
             delete clean.ratingGraph;
             delete clean.solvedGraph;
             delete clean.contributionGraph;
-            delete clean.badges; // Sometimes badges array is very large
+            delete clean.badges; 
             return clean;
         };
 
@@ -125,16 +125,23 @@ ${JSON.stringify(githubData)}
             model: "llama-3.1-8b-instant", 
         });
 
-        const report = chatCompletion.choices[0]?.message?.content || "No report generated.";
+        const reportContent = chatCompletion.choices[0]?.message?.content || "No report generated.";
 
-        // Save report to User profile
-        user.lastAiReport = report;
+        // Save new AI Report
+        const newReport = await AiReport.create({
+            user: user._id,
+            report: reportContent
+        });
+
+        // Legacy compatibility
+        user.lastAiReport = reportContent;
         user.lastAiReportCreatedAt = new Date();
         await user.save();
 
         res.json({
             success: true,
-            report: report
+            id: newReport._id,
+            report: reportContent
         });
 
     } catch (error) {
@@ -143,8 +150,22 @@ ${JSON.stringify(githubData)}
     }
 };
 
+// @desc    Get last AI report for user
+// @route   GET /api/ai/last-report
+// @access  Private
 const getLastReport = async (req, res) => {
     try {
+        const report = await AiReport.findOne({ user: req.user._id }).sort({ createdAt: -1 });
+        if (report) {
+            return res.json({
+                success: true,
+                id: report._id,
+                report: report.report,
+                createdAt: report.createdAt
+            });
+        }
+        
+        // Fallback to legacy
         const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -159,7 +180,102 @@ const getLastReport = async (req, res) => {
     }
 };
 
+// @desc    Get AI report by ID
+// @route   GET /api/ai/report/:id
+// @access  Private
+const getReportById = async (req, res) => {
+    try {
+        const report = await AiReport.findById(req.params.id);
+        if (!report) {
+            return res.status(404).json({ message: 'Report not found' });
+        }
+        if (report.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to view this report' });
+        }
+        res.json({
+            success: true,
+            id: report._id,
+            report: report.report,
+            createdAt: report.createdAt
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get recommendations for an AI report
+// @route   GET /api/ai/recommendations/:id
+// @access  Private
+const getRecommendations = async (req, res) => {
+    try {
+        const report = await AiReport.findById(req.params.id).populate('recommendations');
+        if (!report) {
+            return res.status(404).json({ message: 'Report not found' });
+        }
+        if (report.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        // If we already generated recommendations, return them
+        if (report.recommendations && report.recommendations.length > 0) {
+            return res.json({ success: true, resources: report.recommendations });
+        }
+
+        if (!process.env.GROQ_API_KEY) {
+            return res.status(500).json({ message: "GROQ_API_KEY is not configured." });
+        }
+        
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        
+        const prompt = `Based on the following AI analysis report of a software engineer, identify the top 1 or 2 areas where they are weakest or need the most improvement. 
+Valid areas are STRICTLY limited to the following categories: ["DSA", "System Design", "Backend", "Frontend", "Full stack", "Cloud", "Ci/cd", "Misc"].
+Return ONLY a valid JSON array of strings containing the exact category names. Example output: ["DSA", "System Design"]. Do not output any markdown or explanation.
+
+Report:
+${report.report.substring(0, 3000)}`;
+
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "llama-3.1-8b-instant",
+        });
+
+        let categories = [];
+        try {
+            const content = chatCompletion.choices[0]?.message?.content || "[]";
+            const jsonStr = content.substring(content.indexOf('['), content.lastIndexOf(']') + 1);
+            categories = JSON.parse(jsonStr);
+        } catch (e) {
+            categories = ['DSA', 'System Design']; // fallback
+        }
+        
+        if (!Array.isArray(categories) || categories.length === 0) {
+            categories = ['DSA'];
+        }
+
+        // Find top 5 resources matching these categories
+        const recommendedResources = await Resource.find({ category: { $in: categories } })
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        // Also save them to the report so we don't call Groq every time
+        report.recommendations = recommendedResources.map(r => r._id);
+        await report.save();
+
+        res.json({
+            success: true,
+            resources: recommendedResources,
+            categories: categories
+        });
+
+    } catch (error) {
+        console.error("Recommendations Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = { 
     analyzeProfile,
-    getLastReport
+    getLastReport,
+    getReportById,
+    getRecommendations
 };
