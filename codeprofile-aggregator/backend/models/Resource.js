@@ -8,7 +8,7 @@ const resourceSchema = mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: ['DSA', 'System Design', 'Resume', 'General'],
+        enum: ['DSA', 'System Design', 'Backend', 'Frontend', 'Full stack', 'Cloud', 'Ci/cd', 'Misc', 'Resume', 'General'],
         default: 'General'
     },
     description: {

@@ -195,11 +195,11 @@ const toggleBookmark = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const stringBookmarks = user.bookmarks.map(id => id.toString());
+        const stringBookmarks = user.bookmarks.filter(id => id).map(id => id.toString());
         const isBookmarked = stringBookmarks.includes(resourceId);
 
         if (isBookmarked) {
-            user.bookmarks = user.bookmarks.filter(id => id.toString() !== resourceId);
+            user.bookmarks = user.bookmarks.filter(id => id && id.toString() !== resourceId);
             await user.save();
             res.json({ message: 'Resource removed from bookmarks', bookmarked: false });
         } else {
@@ -225,7 +225,7 @@ const recordReadingHistory = async (req, res) => {
         }
 
         // Filter out existing occurrences to ensure absolute uniqueness (no duplicates)
-        user.readingHistory = user.readingHistory.filter(id => id.toString() !== resourceId);
+        user.readingHistory = user.readingHistory.filter(id => id && id.toString() !== resourceId);
         
         // Push most recent to the front (unshift)
         user.readingHistory.unshift(resourceId);
