@@ -10,6 +10,317 @@ const { getHackerrankData } = require('../services/hackerrankService');
 const { getHackerearthData } = require('../services/hackerearthService');
 const Groq = require('groq-sdk');
 
+const VALID_RECOMMENDATION_CATEGORIES = ['DSA', 'System Design', 'Backend', 'Frontend', 'Full stack', 'Cloud', 'Ci/cd', 'Misc'];
+const CURRENT_RECOMMENDATION_VERSION = 2;
+
+const TOPIC_RULES = [
+    { tag: 'arrays', patterns: [/array/, /two pointer/, /sliding window/] },
+    { tag: 'strings', patterns: [/string/, /substring/, /palindrome/] },
+    { tag: 'linked-list', patterns: [/linked list/] },
+    { tag: 'stack', patterns: [/stack/, /monotonic stack/] },
+    { tag: 'queue', patterns: [/queue/, /deque/] },
+    { tag: 'heap', patterns: [/heap/, /priority queue/] },
+    { tag: 'hashing', patterns: [/hash/, /map/, /set/] },
+    { tag: 'binary-search', patterns: [/binary search/, /lower bound/, /upper bound/] },
+    { tag: 'recursion', patterns: [/recursion/, /backtracking/] },
+    { tag: 'dp', patterns: [/\bdp\b/, /dynamic programming/, /memoization/] },
+    { tag: 'greedy', patterns: [/greedy/] },
+    { tag: 'graph', patterns: [/graph/, /dfs/, /bfs/, /topological/] },
+    { tag: 'tree', patterns: [/tree/, /binary tree/, /bst/, /segment tree/, /fenwick/] },
+    { tag: 'trie', patterns: [/trie/] },
+    { tag: 'bit-manipulation', patterns: [/bit manipulation/, /\bxor\b/, /\band\b/, /\bor\b/] },
+    { tag: 'system-design', patterns: [/system design/, /scalable/, /distributed/, /load balancer/, /sharding/, /replication/, /caching/] },
+    { tag: 'api-design', patterns: [/api/, /rest/, /graphql/, /microservice/] },
+    { tag: 'database', patterns: [/database/, /sql/, /mongodb/, /postgres/, /redis/, /indexing/] },
+    { tag: 'backend', patterns: [/backend/, /server/, /node/, /express/, /auth/, /queue worker/] },
+    { tag: 'frontend', patterns: [/frontend/, /react/, /next\.js/, /javascript/, /typescript/, /css/, /ui/] },
+    { tag: 'full-stack', patterns: [/full stack/, /fullstack/, /end-to-end/] },
+    { tag: 'cloud', patterns: [/cloud/, /aws/, /gcp/, /azure/, /docker/, /kubernetes/, /terraform/] },
+    { tag: 'ci-cd', patterns: [/ci\/cd/, /pipeline/, /github actions/, /deployment/, /devops/] },
+    { tag: 'machine-learning', patterns: [/\bml\b/, /\bai\b/, /machine learning/, /llm/] },
+    { tag: 'oop', patterns: [/\boop\b/, /solid/, /object oriented/, /design pattern/] },
+];
+
+const CATEGORY_HINTS = {
+    'DSA': ['arrays', 'strings', 'linked-list', 'stack', 'queue', 'heap', 'hashing', 'binary-search', 'recursion', 'dp', 'greedy', 'graph', 'tree', 'trie', 'bit-manipulation'],
+    'System Design': ['system-design', 'api-design', 'database', 'oop'],
+    'Backend': ['backend', 'api-design', 'database', 'auth'],
+    'Frontend': ['frontend', 'react', 'nextjs', 'ui'],
+    'Full stack': ['full-stack', 'frontend', 'backend', 'database'],
+    'Cloud': ['cloud', 'docker', 'kubernetes', 'terraform'],
+    'Ci/cd': ['ci-cd', 'deployment', 'github-actions', 'devops'],
+    'Misc': ['machine-learning', 'oop']
+};
+
+const normalizeToken = (value) =>
+    String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+const uniqueStrings = (values) => [...new Set(values.filter(Boolean))];
+
+const stripHtml = (value) => String(value || '').replace(/<[^>]+>/g, ' ');
+
+const compactText = (value, limit = 320) => {
+    const normalized = stripHtml(value).replace(/\s+/g, ' ').trim();
+    return normalized.length > limit ? `${normalized.slice(0, limit)}...` : normalized;
+};
+
+const safeJsonParse = (content, fallback) => {
+    try {
+        return JSON.parse(content);
+    } catch (error) {
+        return fallback;
+    }
+};
+
+const extractJsonBlock = (content, fallback) => {
+    if (!content) return fallback;
+
+    const arrayMatch = content.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+        return safeJsonParse(arrayMatch[0], fallback);
+    }
+
+    const objectMatch = content.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+        return safeJsonParse(objectMatch[0], fallback);
+    }
+
+    return fallback;
+};
+
+const inferResourceTags = (resource) => {
+    const seedTags = (resource.tags || []).map(normalizeToken);
+    const text = [
+        resource.title,
+        resource.category,
+        resource.description,
+        compactText(resource.content, 500),
+        resource.link,
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+    const inferred = [];
+
+    for (const rule of TOPIC_RULES) {
+        if (rule.patterns.some((pattern) => pattern.test(text))) {
+            inferred.push(rule.tag);
+        }
+    }
+
+    const categoryTags = CATEGORY_HINTS[resource.category] || [];
+
+    return uniqueStrings([...seedTags, ...categoryTags, ...inferred]).slice(0, 14);
+};
+
+const buildResourceCatalog = (resources) =>
+    resources.map((resource) => {
+        const resourceKey = resource.slug || resource._id.toString();
+        const normalizedTags = inferResourceTags(resource);
+
+        return {
+            resource,
+            resourceId: resource._id.toString(),
+            resourceKey,
+            title: resource.title,
+            category: resource.category,
+            description: compactText(resource.description, 220),
+            summary: compactText(resource.content, 260),
+            tags: normalizedTags,
+            searchText: [
+                resource.title,
+                resource.category,
+                resource.description,
+                compactText(resource.content, 600),
+                normalizedTags.join(' '),
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase(),
+        };
+    });
+
+const buildFallbackFocusAreas = (reportContent) => {
+    const report = String(reportContent || '').toLowerCase();
+    const scores = VALID_RECOMMENDATION_CATEGORIES.map((category) => {
+        const normalizedCategory = category.toLowerCase();
+        let hits = report.includes(normalizedCategory) ? 2 : 0;
+        const hints = CATEGORY_HINTS[category] || [];
+
+        hints.forEach((hint) => {
+            const phrase = hint.replace(/-/g, ' ');
+            if (report.includes(phrase)) {
+                hits += 1;
+            }
+        });
+
+        return { category, hits };
+    })
+        .sort((left, right) => right.hits - left.hits)
+        .slice(0, 2)
+        .filter((entry) => entry.hits > 0)
+        .map((entry) => ({
+            name: entry.category,
+            why: 'Fallback focus area inferred from the analysis report.',
+            keywords: CATEGORY_HINTS[entry.category] || [],
+        }));
+
+    if (scores.length > 0) {
+        return scores;
+    }
+
+    return [
+        { name: 'DSA', why: 'Default fallback for interview preparation.', keywords: CATEGORY_HINTS.DSA },
+        { name: 'System Design', why: 'Default fallback for engineering growth.', keywords: CATEGORY_HINTS['System Design'] },
+    ];
+};
+
+const extractFocusAreas = async (groq, reportContent) => {
+    const prompt = `You are selecting learning focus areas for a software engineer.
+Return JSON only in this shape:
+{
+  "focusAreas": [
+    {
+      "name": "DSA",
+      "why": "one sentence",
+      "keywords": ["dp", "graphs", "binary-search"]
+    }
+  ]
+}
+
+Rules:
+- Choose at most 3 focus areas.
+- "name" must be one of: ${JSON.stringify(VALID_RECOMMENDATION_CATEGORIES)}.
+- "keywords" should be short, normalized topic tags.
+- Do not include markdown or explanation outside JSON.
+
+Report:
+${String(reportContent || '').slice(0, 5000)}`;
+
+    try {
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.1-8b-instant',
+        });
+
+        const parsed = extractJsonBlock(chatCompletion.choices[0]?.message?.content, { focusAreas: [] });
+        const focusAreas = Array.isArray(parsed?.focusAreas) ? parsed.focusAreas : [];
+
+        const sanitized = focusAreas
+            .filter((area) => VALID_RECOMMENDATION_CATEGORIES.includes(area?.name))
+            .map((area) => ({
+                name: area.name,
+                why: String(area.why || '').trim(),
+                keywords: uniqueStrings((Array.isArray(area.keywords) ? area.keywords : []).map(normalizeToken)).slice(0, 8),
+            }))
+            .filter((area) => area.name);
+
+        return sanitized.length > 0 ? sanitized : buildFallbackFocusAreas(reportContent);
+    } catch (error) {
+        return buildFallbackFocusAreas(reportContent);
+    }
+};
+
+const scoreCatalogEntry = (entry, focusAreas) => {
+    let score = 0;
+    const matchedTags = new Set();
+    const matchedFocusAreas = new Set();
+
+    focusAreas.forEach((area, areaIndex) => {
+        if (entry.category === area.name) {
+            score += 12 - areaIndex;
+            matchedFocusAreas.add(area.name);
+        }
+
+        (area.keywords || []).forEach((keyword) => {
+            const normalizedKeyword = normalizeToken(keyword);
+            const phrase = normalizedKeyword.replace(/-/g, ' ');
+            const hasDirectTag = entry.tags.includes(normalizedKeyword);
+            const hasTextMatch = phrase && entry.searchText.includes(phrase);
+
+            if (hasDirectTag || hasTextMatch) {
+                score += hasDirectTag ? 5 : 3;
+                matchedTags.add(normalizedKeyword);
+                matchedFocusAreas.add(area.name);
+            }
+        });
+
+        const hintedTags = CATEGORY_HINTS[area.name] || [];
+        hintedTags.forEach((tag) => {
+            if (entry.tags.includes(tag)) {
+                score += 2;
+                matchedTags.add(tag);
+                matchedFocusAreas.add(area.name);
+            }
+        });
+    });
+
+    return {
+        score,
+        matchedTags: [...matchedTags].slice(0, 6),
+        matchedFocusAreas: [...matchedFocusAreas],
+    };
+};
+
+const chooseRecommendationsWithGroq = async (groq, focusAreas, candidates) => {
+    const prompt = `You are choosing the best learning resources for a developer.
+Return ONLY a JSON array. Each item must follow this shape:
+{
+  "resourceKey": "exact-resource-key-from-catalog",
+  "focusArea": "one valid focus area from the input",
+  "matchedTags": ["short-tag"],
+  "reason": "one concise sentence"
+}
+
+Rules:
+- Pick between 3 and 6 resources.
+- Use only resourceKey values that exist in the catalog.
+- Prefer a balanced learning path across the strongest improvement needs.
+- Do not invent resources.
+
+Focus areas:
+${JSON.stringify(focusAreas, null, 2)}
+
+Catalog:
+${JSON.stringify(candidates.map((entry) => ({
+            resourceKey: entry.resourceKey,
+            title: entry.title,
+            category: entry.category,
+            tags: entry.tags,
+            description: entry.description,
+            summary: entry.summary,
+        })), null, 2)}`;
+
+    const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: 'llama-3.1-8b-instant',
+    });
+
+    return extractJsonBlock(chatCompletion.choices[0]?.message?.content, []);
+};
+
+const decorateRecommendations = (resources, details) => {
+    const detailsById = new Map(
+        (details || []).map((detail) => [String(detail.resourceId), detail])
+    );
+
+    return resources.map((resource) => {
+        const detail = detailsById.get(resource._id.toString());
+        return {
+            ...resource.toObject(),
+            resourceKey: detail?.resourceKey || resource.slug || resource._id.toString(),
+            recommendedFor: detail?.focusArea || resource.category,
+            matchedTags: detail?.matchedTags || [],
+            recommendationReason: detail?.reason || '',
+            recommendationScore: detail?.score || 0,
+        };
+    });
+};
+
 // @desc    Analyze user profile with AI
 // @route   GET /api/ai/analyze
 // @access  Private
@@ -216,9 +527,18 @@ const getRecommendations = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // If we already generated recommendations, return them
-        if (report.recommendations && report.recommendations.length > 0) {
-            return res.json({ success: true, resources: report.recommendations });
+        // If we already generated recommendations with the current strategy, return them
+        if (
+            report.recommendationVersion === CURRENT_RECOMMENDATION_VERSION &&
+            report.recommendations &&
+            report.recommendations.length > 0
+        ) {
+            const existingResources = report.recommendations.filter(Boolean);
+            return res.json({
+                success: true,
+                resources: decorateRecommendations(existingResources, report.recommendationDetails),
+                focusAreas: uniqueStrings((report.recommendationDetails || []).map((detail) => detail.focusArea)).filter(Boolean),
+            });
         }
 
         if (!process.env.GROQ_API_KEY) {
@@ -226,45 +546,97 @@ const getRecommendations = async (req, res) => {
         }
         
         const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-        
-        const prompt = `Based on the following AI analysis report of a software engineer, identify the top 1 or 2 areas where they are weakest or need the most improvement. 
-Valid areas are STRICTLY limited to the following categories: ["DSA", "System Design", "Backend", "Frontend", "Full stack", "Cloud", "Ci/cd", "Misc"].
-Return ONLY a valid JSON array of strings containing the exact category names. Example output: ["DSA", "System Design"]. Do not output any markdown or explanation.
 
-Report:
-${report.report.substring(0, 3000)}`;
-
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.1-8b-instant",
-        });
-
-        let categories = [];
-        try {
-            const content = chatCompletion.choices[0]?.message?.content || "[]";
-            const jsonStr = content.substring(content.indexOf('['), content.lastIndexOf(']') + 1);
-            categories = JSON.parse(jsonStr);
-        } catch (e) {
-            categories = ['DSA', 'System Design']; // fallback
-        }
-        
-        if (!Array.isArray(categories) || categories.length === 0) {
-            categories = ['DSA'];
-        }
-
-        // Find top 5 resources matching these categories
-        const recommendedResources = await Resource.find({ category: { $in: categories } })
+        const allResources = await Resource.find({})
             .sort({ createdAt: -1 })
-            .limit(5);
+            .select('title slug category description content tags link author createdAt');
 
-        // Also save them to the report so we don't call Groq every time
-        report.recommendations = recommendedResources.map(r => r._id);
+        const catalog = buildResourceCatalog(allResources);
+        const focusAreas = await extractFocusAreas(groq, report.report);
+
+        const scoredCandidates = catalog
+            .map((entry) => {
+                const scoring = scoreCatalogEntry(entry, focusAreas);
+                return { ...entry, ...scoring };
+            })
+            .filter((entry) => entry.score > 0)
+            .sort((left, right) => right.score - left.score)
+            .slice(0, 18);
+
+        const fallbackCandidates = scoredCandidates.length > 0
+            ? scoredCandidates
+            : catalog
+                .map((entry) => ({
+                    ...entry,
+                    ...scoreCatalogEntry(entry, buildFallbackFocusAreas(report.report)),
+                }))
+                .sort((left, right) => right.score - left.score)
+                .slice(0, 8);
+
+        let recommendationPayload = [];
+
+        try {
+            recommendationPayload = await chooseRecommendationsWithGroq(
+                groq,
+                focusAreas,
+                fallbackCandidates
+            );
+        } catch (error) {
+            recommendationPayload = [];
+        }
+
+        const candidateMap = new Map(fallbackCandidates.map((entry) => [entry.resourceKey, entry]));
+
+        let recommendationDetails = uniqueStrings(
+            (Array.isArray(recommendationPayload) ? recommendationPayload : [])
+                .map((item) => String(item?.resourceKey || '').trim())
+        )
+            .map((resourceKey) => {
+                const item = recommendationPayload.find((entry) => entry?.resourceKey === resourceKey);
+                const candidate = candidateMap.get(resourceKey);
+
+                if (!candidate) return null;
+
+                const fallbackFocusArea = candidate.matchedFocusAreas[0] || candidate.category;
+
+                return {
+                    resourceId: candidate.resource._id,
+                    resourceKey: candidate.resourceKey,
+                    focusArea: VALID_RECOMMENDATION_CATEGORIES.includes(item?.focusArea) ? item.focusArea : fallbackFocusArea,
+                    matchedTags: uniqueStrings(
+                        (Array.isArray(item?.matchedTags) ? item.matchedTags : candidate.matchedTags).map(normalizeToken)
+                    ).slice(0, 6),
+                    reason: String(item?.reason || `Recommended to strengthen ${fallbackFocusArea.toLowerCase()} using a focused blog from your resource hub.`).trim(),
+                    score: candidate.score,
+                };
+            })
+            .filter(Boolean)
+            .slice(0, 6);
+
+        if (recommendationDetails.length === 0) {
+            recommendationDetails = fallbackCandidates.slice(0, 5).map((candidate) => ({
+                resourceId: candidate.resource._id,
+                resourceKey: candidate.resourceKey,
+                focusArea: candidate.matchedFocusAreas[0] || candidate.category,
+                matchedTags: candidate.matchedTags,
+                reason: `Recommended because it directly covers ${candidate.matchedTags.slice(0, 2).join(' and ') || candidate.category.toLowerCase()}.`,
+                score: candidate.score,
+            }));
+        }
+
+        const recommendedResources = recommendationDetails
+            .map((detail) => fallbackCandidates.find((candidate) => candidate.resource._id.toString() === detail.resourceId.toString())?.resource)
+            .filter(Boolean);
+
+        report.recommendations = recommendationDetails.map((detail) => detail.resourceId);
+        report.recommendationDetails = recommendationDetails;
+        report.recommendationVersion = CURRENT_RECOMMENDATION_VERSION;
         await report.save();
 
         res.json({
             success: true,
-            resources: recommendedResources,
-            categories: categories
+            resources: decorateRecommendations(recommendedResources, recommendationDetails),
+            focusAreas: focusAreas.map((area) => area.name),
         });
 
     } catch (error) {
