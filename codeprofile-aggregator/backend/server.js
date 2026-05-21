@@ -51,6 +51,7 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/resources', require('./routes/resourceRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/subscription', require('./routes/subscriptionRoutes'));
+app.use('/api/exam-guides', require('./routes/examGuideRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
