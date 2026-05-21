@@ -1,73 +1,187 @@
-# Profit and Loss (TCS NQT Aptitude)
+# Profit and Loss (TCS NQT Prep)
 
-## 1. Core Definitions
-```text
-Profit  = SP - CP
-Loss    = CP - SP
-Profit% = (Profit/CP) * 100
-Loss%   = (Loss/CP) * 100
-```
+## 1. Essential Formulas
 
----
+* **Cost Price (CP)**: The price at which an article is purchased.
 
-## 2. Direct Formula Forms (Super fast)
-If profit is p%:
-```text
-SP = CP * (1 + p/100)
-```
-If loss is l%:
-```text
-SP = CP * (1 - l/100)
-```
+* **Selling Price (SP)**: The price at which an article is sold.
 
----
+* **Profit (Gain)**: If SP > CP $\implies$ Gain = SP - CP.
 
-## 3. Discount + Marked Price (Common in TCS)
-```text
-Discount = MP - SP
-Discount% = (Discount/MP) * 100
-SP = MP * (1 - d/100)
-```
+* **Loss**: If CP > SP $\implies$ Loss = CP - SP.
 
-### Successive Discounts
-```text
-Net discount% = a + b - (a*b)/100
-```
+### Percentage Formulas
+
+* **Gain %** = 
+
+$$\frac{\text{Gain}}{\text{CP}} \times 100$$
+
+* **Loss %** = 
+
+$$\frac{\text{Loss}}{\text{CP}} \times 100$$
+
+* **SP when there is Gain** = 
+
+$$\text{CP} \times \left(1 + \frac{\text{Gain\%}}{100}\right)$$
+
+* **SP when there is Loss** = 
+
+$$\text{CP} \times \left(1 - \frac{\text{Loss\%}}{100}\right)$$
 
 ---
 
-## 4. Step-by-step Example
-CP=1000, profit 25%
-- SP = 1000*(1.25) = 1250
+## 2. Discounts & Marked Price
 
-MP=2000, discount 10% then 20%
-- Net discount = 10+20-(200)/100 = 28%
-- SP = 2000*(0.72)=1440
+* **Marked Price (MP / List Price)**: The price printed on the label.
 
----
+* **Discount** is always calculated on the **Marked Price**.
 
-## 5. Practice Questions (10)
-**Q1.** CP=1200, SP=1500. Find profit%.  
-**Q2.** CP=800, loss 10%. Find SP.  
-**Q3.** MP=2000, discount 15%. Find SP.  
-**Q4.** MP=5000, discounts 20% and 10%. Find net discount%.  
-**Q5.** An article is sold for 1320 at 10% profit. Find CP.  
-**Q6.** An article is sold for 900 at 10% loss. Find CP.  
-**Q7.** A man gains 20% by selling at 720. Find CP.  
-**Q8.** An article is sold for 660 at 10% profit. Find CP.  
-**Q9.** A shopkeeper marks goods 40% above CP and gives 10% discount. Find profit%.  
-**Q10.** CP=500. If sold at 25% profit, what is SP?
+* **Selling Price (SP)** = MP - Discount.
+
+* **Discount %** = 
+
+$$\frac{\text{Discount}}{\text{MP}} \times 100$$
+
+### Successive Discounts Formula
+
+If successive discounts of $d_1\%$ and $d_2\%$ are offered, the equivalent single discount is:
+
+$$\text{Single Discount} = d_1 + d_2 - \frac{d_1 \times d_2}{100}\%$$
 
 ---
 
-## 6. Answers
-**A1.** Profit=300 => (300/1200)*100=25%  
-**A2.** SP=800*(0.9)=720  
-**A3.** SP=2000*(0.85)=1700  
-**A4.** 20+10-2=28%  
-**A5.** CP=1320/1.10=1200  
-**A6.** CP=900/0.90=1000  
-**A7.** CP=720/1.20=600  
-**A8.** CP = 660/1.10 = 600  
-**A9.** SP=CP*1.4*0.9=1.26CP => profit=26%  
-**A10.** SP=500*1.25=625
+## 3. Solved Examples
+
+### Example 1:
+
+A book was sold for $27.50 with a profit of 10%. If it had been sold for $25.75, what would have been the profit or loss percentage?
+
+* **Solution**:
+
+  SP = $27.50, Profit = 10%.
+  CP = SP / (1 + 0.10) = 27.50 / 1.10 = $25.00.
+  New SP = $25.75.
+  New Profit = 25.75 - 25.00 = $0.75.
+  New Profit % = (0.75 / 25) * 100 = 3%.
+
+### Example 2:
+
+Find the single discount equivalent to a series of successive discounts of 20% and 10%.
+
+* **Solution**:
+
+  Using successive discount formula with $d_1 = 20$ and $d_2 = 10$:
+  
+
+$$\text{Equivalent Discount} = 20 + 10 - \frac{20 \times 10}{100} = 30 - 2 = 28\%$$
+
+---
+
+## 4. Practice Questions (10)
+
+**Q1.** A man buys a toy for $50 and sells it for $75. What is his profit percentage?
+
+**Q2.** An article is sold at a loss of 10%. If it had been sold for $9 more, there would have been a gain of 12.5%. Find the cost price.
+
+**Q3.** A dishonest dealer professes to sell his goods at cost price but uses a weight of 960 grams for a kg. Find his gain percentage.
+
+**Q4.** By selling 33 meters of cloth, a merchant gains the selling price of 11 meters. Find his gain percentage.
+
+**Q5.** A shopkeeper marks his goods 20% above the cost price and allows a discount of 10% on the marked price. What is his net gain percentage?
+
+**Q6.** If the cost price of 15 articles is equal to the selling price of 12 articles, find the gain percentage.
+
+**Q7.** A man sells two articles for $990 each. On one he gains 10% and on the other he loses 10%. Find his overall gain or loss percentage.
+
+**Q8.** A dealer sells an article at a profit of 20%. If he had bought it at 20% less and sold it for $75 less, he would have gained 25%. Find the cost price.
+
+**Q9.** After getting two successive discounts, a shirt with a list price of $150 is available at $105. If the second discount is 12.5%, find the first discount.
+
+**Q10.** The cost price of a radio is $600. 5% of the cost price is spent on transportation. To make a net profit of 15%, what must be the selling price?
+
+---
+
+## 5. Answers & Detailed Explanations
+
+**A1.** **50%**
+
+* **Step-by-step Explanation**:
+
+  Profit = 75 - 50 = 25.
+  Profit % = (25 / 50) * 100 = 50%.
+
+**A2.** **$40**
+
+* **Step-by-step Explanation**:
+
+  Difference in percentage = Gain% - (-Loss%) = 12.5% - (-10%) = 22.5%.
+  Given, 22.5% of CP = $9.
+  CP = (9 * 100) / 22.5 = 900 / 22.5 = $40.
+
+**A3.** **4.17%**
+
+* **Step-by-step Explanation**:
+
+  Error in weight = 1000g - 960g = 40g.
+  Gain % = (Error / True Value - Error) * 100 = (40 / 960) * 100 = 4.17%.
+
+**A4.** **50%**
+
+* **Step-by-step Explanation**:
+
+  Gain = SP of 33m - CP of 33m.
+  SP of 11m = SP of 33m - CP of 33m $\implies$ CP of 33m = SP of 22m.
+  Gain % = (Gain / CP) * 100 = (SP of 11m / SP of 22m) * 100 = (11 / 22) * 100 = 50%.
+
+**A5.** **8%**
+
+* **Step-by-step Explanation**:
+
+  Let CP = 100. MP = 120.
+  Discount = 10% of 120 = 12.
+  SP = 120 - 12 = 108.
+  Profit = 8 $\implies$ Gain % = 8%.
+
+**A6.** **25%**
+
+* **Step-by-step Explanation**:
+
+  Let CP of 1 article = $1. CP of 15 articles = $15.
+  SP of 12 articles = CP of 15 articles = $15.
+  CP of 12 articles = $12.
+  Profit on 12 articles = 15 - 12 = 3.
+  Gain % = (3 / 12) * 100 = 25%.
+
+**A7.** **1% Loss**
+
+* **Step-by-step Explanation**:
+
+  When two articles are sold at same price, one at $x\%$ gain and other at $x\%$ loss, there is always a loss of $(x^2 / 100)\%$.
+  Loss = $(10^2 / 100)\% = 1\%$.
+
+**A8.** **$375**
+
+* **Step-by-step Explanation**:
+
+  Let original CP = $x$. SP = $1.2x$.
+  New CP = $0.8x$. New SP = $1.2x - 75$.
+  Profit % = 25% $\implies$ New SP = $1.25 * New CP$.
+  
+
+$$1.2x - 75 = 1.25 \times 0.8x \implies 1.2x - 75 = x \implies 0.2x = 75 \implies x = 375$$
+
+**A9.** **20%**
+
+* **Step-by-step Explanation**:
+
+  Let price after first discount be $P$.
+  Price after second discount (12.5%) = $P * 0.875 = 105 \implies P = 105 / 0.875 = 120$.
+  First discount amount = List Price - P = 150 - 120 = 30.
+  First discount % = (30 / 150) * 100 = 20%.
+
+**A10.** **$724.50**
+
+* **Step-by-step Explanation**:
+
+  Effective Cost Price = 600 + 5% of 600 = 600 + 30 = $630.
+  Selling Price for 15% profit = $630 * 1.15 = $724.50.

@@ -1,68 +1,149 @@
-# Permutation and Combination (TCS NQT Aptitude)
+# Permutation and Combination (TCS NQT Prep)
 
-## 1. Basics
-```text
-n! = n * (n-1) * ... * 1
-0! = 1
-```
+## 1. Core Principles
 
-**Permutation (arrangement)**:
-```text
-nPr = n! / (n-r)!
-```
+* **Factorial**: $n! = n \times (n-1) \times (n-2) \times \dots \times 1$. ($0! = 1$).
 
-**Combination (selection)**:
-```text
-nCr = n! / (r! * (n-r)!)
-```
+* **Permutation**: Arrangement where order matters.
 
----
+  
 
-## 2. Key Properties (Speed boosters)
-```text
-nCr = nC(n-r)
-nC0 = nCn = 1
-nCr = (n/r) * (n-1 C r-1)
-```
+$$_nP_r = \frac{n!}{(n-r)!}$$
 
----
+* **Combination**: Selection where order does not matter.
 
-## 3. Typical TCS Patterns
-- Arrangements in a line
-- Selections (choose r)
-- “At least / at most” using complement
-- Circular arrangements (basic)
+  
 
-Circular (distinct people around a round table):
-```text
-(n-1)!
-```
+$$_nC_r = \frac{n!}{r!(n-r)!}$$
+
+### Properties
+
+* $_nC_r = _nC_{n-r}$
+
+* $_nC_0 = _nC_n = 1$
+
+* $_nC_1 = n$
 
 ---
 
-## 4. Practice Questions (10)
-**Q1.** Find 5!  
-**Q2.** Find 10P2.  
-**Q3.** Find 8C3.  
-**Q4.** How many ways to arrange 6 different books in a shelf?  
-**Q5.** How many ways to choose 3 students from 10?  
-**Q6.** In how many ways can 5 people sit around a round table?  
-**Q7.** How many 3-digit numbers can be formed using digits 1,2,3,4 without repetition?  
-**Q8.** From 7 boys and 5 girls, how many ways to select a team of 3 boys and 2 girls?  
-**Q9.** Find the number of ways to select at least 1 item from 6 distinct items.  
-**Q10.** How many ways to arrange the letters of the word “LEVEL”?
+## 2. Letter Arrangements & Circular Permutations
+
+* **Arrangement of letters of a word** of length $N$ with repeating letters:
+
+  
+
+$$\text{Ways} = \frac{N!}{p! \times q! \times \dots}$$
+
+  *Where $p, q$ are frequencies of repeating letters.*
+
+* **Circular Permutation**: Arrangements of $N$ items around a circular table is $(N-1)!$.
 
 ---
 
-## 5. Answers
-**A1.** 120  
-**A2.** 10*9 = 90  
-**A3.** 56  
-**A4.** 6! = 720  
-**A5.** 10C3 = 120  
-**A6.** (5-1)! = 24  
-**A7.** 4P3 = 24  
-**A8.** 7C3 * 5C2 = 35*10 = 350  
-**A9.** Total subsets = 2^6 = 64, exclude empty => 63  
-**A10.** 5!/2! = 60
+## 3. Practice Questions (10)
 
+**Q1.** How many 4-digit numbers can be formed using digits 1, 2, 3, 4, 5 with no repetition?
+
+**Q2.** In how many ways can the letters of the word "LEADING" be arranged such that vowels always come together?
+
+**Q3.** A committee of 5 members is to be formed from 6 gentlemen and 4 ladies. In how many ways can this be done if it must contain at least 2 ladies?
+
+**Q4.** In how many ways can 6 people sit around a circular table?
+
+**Q5.** Out of 7 consonants and 4 vowels, how many words of 3 consonants and 2 vowels can be formed?
+
+**Q6.** Find the value of $_{10}C_3$.
+
+**Q7.** In how many ways can the letters of the word "APPLE" be arranged?
+
+**Q8.** How many diagonals can be drawn in a decagon (10-sided polygon)?
+
+**Q9.** In how many ways can a cricketer select 11 players out of 15 players if a particular player is always selected?
+
+**Q10.** How many 3-letter words can be formed from the word "LOGARITHM" if repetition is not allowed?
+
+---
+
+## 4. Answers & Detailed Explanations
+
+**A1.** **120**
+
+* **Step-by-step Explanation**:
+
+  Arranging 4 digits out of 5:
+  
+
+$$_5P_4 = \frac{5!}{(5-4)!} = 5! = 120\text{ ways}$$
+
+**A2.** **720**
+
+* **Step-by-step Explanation**:
+
+  Vowels in "LEADING": E, A, I (3 vowels).
+  Consonants: L, D, N, G (4 consonants).
+  Treat vowels as a single block: (EAI), L, D, N, G $\implies$ 5 items to arrange: $5! = 120$.
+  Arrange vowels inside block: $3! = 6$.
+  Total arrangements = $120 \times 6 = 720$.
+
+**A3.** **186**
+
+* **Step-by-step Explanation**:
+
+  We need to select 5 members with at least 2 ladies. Possible cases:
+  * Case 1: 2 ladies and 3 gentlemen $\implies _4C_2 \times _6C_3 = 6 \times 20 = 120$.
+  * Case 2: 3 ladies and 2 gentlemen $\implies _4C_3 \times _6C_2 = 4 \times 15 = 60$.
+  * Case 3: 4 ladies and 1 gentleman $\implies _4C_4 \times _6C_1 = 1 \times 6 = 6$.
+  Total ways = 120 + 60 + 6 = 186.
+
+**A4.** **120**
+
+* **Step-by-step Explanation**:
+
+  Circular arrangement formula: $(N-1)! = (6-1)! = 5! = 120$.
+
+**A5.** **25200**
+
+* **Step-by-step Explanation**:
+
+  Select 3 consonants out of 7: $_7C_3 = 35$.
+  Select 2 vowels out of 4: $_4C_2 = 6$.
+  Arrange the 5 selected letters: $5! = 120$.
+  Total words = $35 \times 6 \times 120 = 25,200$.
+
+**A6.** **120**
+
+* **Step-by-step Explanation**:
+
+  
+
+$$_{10}C_3 = \frac{10 \times 9 \times 8}{3 \times 2 \times 1} = 120$$
+
+**A7.** **60**
+
+* **Step-by-step Explanation**:
+
+  "APPLE" has 5 letters, 'P' repeats twice.
+  Ways = $5! / 2! = 120 / 2 = 60$.
+
+**A8.** **35**
+
+* **Step-by-step Explanation**:
+
+  Number of diagonals in $N$-sided polygon = $_NC_2 - N = \frac{N(N-3)}{2}$.
+  For decagon ($N=10$): $10 \times 7 / 2 = 35$.
+
+**A9.** **1001**
+
+* **Step-by-step Explanation**:
+
+  If one player is always selected, we need to choose remaining 10 players out of remaining 14 players.
+  Ways = $_{14}C_{10} = _{14}C_4 = \frac{14 \times 13 \times 12 \times 11}{4 \times 3 \times 2 \times 1} = 1001$.
+
+**A10.** **504**
+
+* **Step-by-step Explanation**:
+
+  "LOGARITHM" has 9 unique letters. Arrange 3 letters:
+  
+
+$$_9P_3 = 9 \times 8 \times 7 = 504$$

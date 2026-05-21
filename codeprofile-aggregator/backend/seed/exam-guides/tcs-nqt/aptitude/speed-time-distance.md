@@ -1,67 +1,177 @@
-# Speed, Time and Distance (TCS NQT Aptitude)
+# Speed, Time and Distance (TCS NQT Prep)
 
-## 1. Core Formula
-```text
-Speed = Distance / Time
-Time  = Distance / Speed
-Distance = Speed * Time
-```
+## 1. Core Formulas
 
----
+* **Fundamental Formula**:
 
-## 2. Relative Speed (most asked)
-- Same direction: `v_rel = v1 - v2`
-- Opposite direction: `v_rel = v1 + v2`
+  
 
-**Step-by-step example**
-Train (60 km/h) passes a man (6 km/h) opposite direction:
-- relative speed = 60 + 6 = 66 km/h
+$$\text{Distance} = \text{Speed} \times \text{Time}$$
 
----
+  
 
-## 3. Average Speed (very important)
-```text
-Average speed = Total distance / Total time
-```
-Special case: equal distances at speeds a and b:
-```text
-Avg speed = 2ab/(a+b)
-```
+$$\text{Speed} = \frac{\text{Distance}}{\text{Time}}, \quad \text{Time} = \frac{\text{Distance}}{\text{Speed}}$$
+
+### Metric Conversions
+
+* To convert from $km/h$ to $m/s$, multiply by $5/18$.
+
+* To convert from $m/s$ to $km/h$, multiply by $18/5$.
 
 ---
 
-## 4. Trains Quick Rules
-```text
-Time to cross a pole = (train length) / speed
-Time to cross a platform = (train length + platform length) / speed
-```
-(Convert km/h to m/s: multiply by 5/18)
+## 2. Average and Relative Speed
+
+### Average Speed
+
+If the distance is constant and a body travels at speed $x$ and then returns at speed $y$:
+
+$$\text{Average Speed} = \frac{2xy}{x+y}$$
+
+If the time is constant, average speed is simple average: $(x+y)/2$.
+
+### Relative Speed
+
+* **Same Direction**: Relative Speed = $S_1 - S_2$
+
+* **Opposite Direction**: Relative Speed = $S_1 + S_2$
+
+---
+
+## 3. Train Crossing Rules
+
+* When crossing a stationary pole/man, distance = length of the train ($L_T$).
+
+* When crossing a bridge/platform of length $L_P$, distance = $L_T + L_P$.
+
+---
+
+## 4. Solved Examples
+
+### Example 1:
+
+A train 150m long passes a telegraph post in 12 seconds. Find the speed of the train in km/h.
+
+* **Solution**:
+
+  Distance = 150m, Time = 12s.
+  Speed in m/s = 150 / 12 = 12.5 m/s.
+  Speed in km/h = 12.5 * 18 / 5 = 45 km/h.
 
 ---
 
 ## 5. Practice Questions (10)
-**Q1.** A person travels 120 km in 2 hours. Find speed.  
-**Q2.** Convert 54 km/h to m/s.  
-**Q3.** A train of 180m length crosses a pole in 12s. Find speed in km/h.  
-**Q4.** A train 200m crosses a 300m platform in 25s. Find speed in km/h.  
-**Q5.** Two cars at 40 km/h and 60 km/h move same direction. Relative speed?  
-**Q6.** Two persons start from same point in opposite directions at 5 and 7 km/h. Distance after 3 hours?  
-**Q7.** A boat speed in still water is 10 km/h and stream is 2 km/h. Downstream speed? Upstream speed?  
-**Q8.** A covers equal distances at 30 km/h and 60 km/h. Average speed?  
-**Q9.** A cyclist covers 15 km in 45 minutes. Find speed in km/h.  
-**Q10.** If speed increases by 20% for same distance, time changes by what %?
+
+**Q1.** A car travels at 54 km/h. What is its speed in m/s?
+
+**Q2.** An express train travels from A to B at 60 km/h and returns at 40 km/h. Find its average speed.
+
+**Q3.** Two trains of lengths 120m and 80m run in opposite directions at 42 km/h and 30 km/h respectively. In what time will they clear each other?
+
+**Q4.** A thief is spotted by a policeman from 200m. The thief runs at 10 km/h and the policeman chases him at 11 km/h. What distance does the thief cover before being caught?
+
+**Q5.** A boat goes 24 km downstream in 2 hours and returns upstream in 6 hours. Find the speed of the boat in still water.
+
+**Q6.** A train passes a platform 100m long in 60 seconds at a speed of 45 km/h. Find the length of the train.
+
+**Q7.** Walking at 3/4 of his usual speed, a man is 20 minutes late to his office. Find his usual time.
+
+**Q8.** A man travels a distance of 80 km in 7 hours, partly on foot at 8 km/h and partly on bicycle at 16 km/h. Find the distance traveled on foot.
+
+**Q9.** Two places A and B are 100 km apart. A car starts from A and another from B at the same time. If they travel in the same direction, they meet in 5 hours. If they travel towards each other, they meet in 1 hour. Find the speed of the faster car.
+
+**Q10.** A man can row 6 km/h in still water. If the river flows at 2 km/h, he takes 3 hours to row to a place and back. Find the distance to that place.
 
 ---
 
-## 6. Answers
-**A1.** 60 km/h  
-**A2.** 54*(5/18)=15 m/s  
-**A3.** speed = 180/12 = 15 m/s = 15*(18/5)=54 km/h  
-**A4.** distance=500m, speed=500/25=20 m/s => 72 km/h  
-**A5.** 20 km/h  
-**A6.** (5+7)*3=36 km  
-**A7.** Down=12, Up=8 km/h  
-**A8.** 2*30*60/(90)=40 km/h  
-**A9.** 45 min=0.75h => 15/0.75=20 km/h  
-**A10.** Time is inversely proportional to speed => new time factor = 1/1.2 => 16.67% decrease
+## 6. Answers & Detailed Explanations
 
+**A1.** **15 m/s**
+
+* **Step-by-step Explanation**:
+
+  Speed = $54 \times \frac{5}{18} = 15\text{ m/s}$.
+
+**A2.** **48 km/h**
+
+* **Step-by-step Explanation**:
+
+  Using average speed formula:
+  
+
+$$\text{Avg Speed} = \frac{2 \times 60 \times 40}{60 + 40} = \frac{4800}{100} = 48\text{ km/h}$$
+
+**A3.** **10 seconds**
+
+* **Step-by-step Explanation**:
+
+  Total distance = 120 + 80 = 200m.
+  Relative speed = 42 + 30 = 72 km/h.
+  72 km/h in m/s = $72 \times \frac{5}{18} = 20\text{ m/s}$.
+  Time = 200 / 20 = 10 seconds.
+
+**A4.** **2 km**
+
+* **Step-by-step Explanation**:
+
+  Relative speed = 11 - 10 = 1 km/h.
+  Time to catch = Distance / Relative Speed = 0.2 km / 1 km/h = 0.2 hours.
+  Thief covers = Speed * Time = 10 km/h * 0.2 hours = 2 km.
+
+**A5.** **8 km/h**
+
+* **Step-by-step Explanation**:
+
+  Downstream speed ($D$) = 24 / 2 = 12 km/h.
+  Upstream speed ($U$) = 24 / 6 = 4 km/h.
+  Speed in still water = $(D + U) / 2 = (12 + 4) / 2 = 8\text{ km/h}$.
+
+**A6.** **650m**
+
+* **Step-by-step Explanation**:
+
+  Speed = 45 km/h = $45 \times \frac{5}{18} = 12.5\text{ m/s}$.
+  Total distance covered in 60s = 12.5 * 60 = 750m.
+  Platform length = 100m $\implies$ Train length = 750 - 100 = 650m.
+
+**A7.** **60 minutes**
+
+* **Step-by-step Explanation**:
+
+  Let usual speed be $S$ and usual time be $T$.
+  New speed = $0.75S$, New time = $T + 20$.
+  Since distance is constant:
+  
+
+$$S \times T = 0.75S \times (T + 20) \implies T = 0.75T + 15 \implies 0.25T = 15 \implies T = 60\text{ minutes}$$
+
+**A8.** **32 km**
+
+* **Step-by-step Explanation**:
+
+  Let time on foot be $t$ hours. Time on bicycle = $7 - t$ hours.
+  
+
+$$8t + 16(7 - t) = 80 \implies 8t + 112 - 16t = 80 \implies 8t = 32 \implies t = 4\text{ hours}$$
+
+  Distance on foot = 8 * 4 = 32 km.
+
+**A9.** **60 km/h**
+
+* **Step-by-step Explanation**:
+
+  Let speeds be $x$ and $y$ (where $x > y$).
+  Same direction: $(x - y) * 5 = 100 \implies x - y = 20$.
+  Opposite direction: $(x + y) * 1 = 100 \implies x + y = 100$.
+  Add the equations: $2x = 120 \implies x = 60$ km/h.
+
+**A10.** **8 km**
+
+* **Step-by-step Explanation**:
+
+  Downstream speed = 6 + 2 = 8 km/h.
+  Upstream speed = 6 - 2 = 4 km/h.
+  Let distance be $d$.
+  
+
+$$\frac{d}{8} + \frac{d}{4} = 3 \implies \frac{3d}{8} = 3 \implies d = 8\text{ km}$$
