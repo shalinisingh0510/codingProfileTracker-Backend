@@ -1,7 +1,7 @@
 module.exports = [
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'percentages',
     title: 'Percentages',
     contentMarkdown: `
@@ -204,7 +204,7 @@ a + b - (ab / 100)
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'ratio-and-proportion',
     title: 'Ratio and Proportion',
     contentMarkdown: `
@@ -300,7 +300,7 @@ Profit Ratio = (I₁ × T₁) : (I₂ × T₂) : (I₃ × T₃)
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'allegations-and-mixtures',
     title: 'Allegations and Mixtures',
     contentMarkdown: `
@@ -374,7 +374,7 @@ If a mixture has 3 parts milk and 2 parts water, milk concentration is 3/5. Use 
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'averages',
     title: 'Averages',
     contentMarkdown: `
@@ -447,7 +447,7 @@ Excluded: Value of Excluded = Old Average - (Remaining items × Decrease in aver
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'profit-and-loss',
     title: 'Profit and Loss',
     contentMarkdown: `
@@ -527,7 +527,7 @@ Profit/Loss % = [(y - x) / x] × 100
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'work-and-time',
     title: 'Work and Time',
     contentMarkdown: `
@@ -594,7 +594,7 @@ Find total work (LCM). Find work done in x days. Remaining work = Total - Done. 
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'speed-time-distance',
     title: 'Speed, Time and Distance',
     contentMarkdown: `
@@ -675,7 +675,7 @@ S₁ / S₂ = √(T₂ / T₁)
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'number-system-lcm-hcf',
     title: 'Number System, LCM and HCF',
     contentMarkdown: `
@@ -749,7 +749,7 @@ Cyclicity of 0, 1, 5, 6 is 1 (always same).
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'probability',
     title: 'Probability',
     contentMarkdown: `
@@ -829,7 +829,7 @@ nC2 = n(n-1) / 2
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'permutation-and-combination',
     title: 'Permutation and Combination',
     contentMarkdown: `
@@ -903,7 +903,7 @@ Number of handshakes among n people = nC2 = n(n-1) / 2
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'geometry-area-perimeter',
     title: 'Geometry, Area and Perimeter',
     contentMarkdown: `
@@ -992,7 +992,7 @@ Area of 4 walls = 2(L+B)×H.
   },
   {
     examSlug: 'tcs-nqt',
-    sectionSlug: 'aptitude-section',
+    sectionSlug: 'aptitude',
     topicSlug: 'clocks-calendar-ages',
     title: 'Clocks, Calendar and Ages',
     contentMarkdown: `
