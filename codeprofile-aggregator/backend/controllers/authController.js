@@ -134,7 +134,7 @@ const forgotPassword = async (req, res) => {
 
         // Send email
         const frontendUrl = process.env.FRONTEND_URL || 'https://coding-profile-tracker-frontend.vercel.app';
-        const emailSent = await sendEmail({
+        await sendEmail({
             to: user.email,
             subject: 'Password Reset Code - CodeProfile Tracker',
             html: `
@@ -151,14 +151,10 @@ const forgotPassword = async (req, res) => {
             `
         });
 
-        if (emailSent) {
-            res.json({ message: 'Reset code sent to your email address' });
-        } else {
-            res.status(500).json({ message: 'Failed to send reset email. Please try again.' });
-        }
+        res.json({ message: 'Reset code sent to your email address' });
     } catch (error) {
         console.error('[Auth] Forgot password error:', error.message);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: `Failed to send reset email: ${error.message}` });
     }
 };
 
