@@ -679,72 +679,117 @@ S₁ / S₂ = √(T₂ / T₁)
     topicSlug: 'number-system-lcm-hcf',
     title: 'Number System, LCM and HCF',
     contentMarkdown: `
-# 1. Basics of Number System
-- **Prime Numbers:** Numbers divisible only by 1 and themselves. (2, 3, 5, 7, 11...)
-- **Co-Prime Numbers:** HCF of two numbers is 1. (e.g., 8 and 9)
-- **Face Value:** The value of the digit itself.
-- **Place Value:** The value based on position (units, tens, hundreds).
+# 1. Number System Theory
+## Introduction
+In the Hindu-Arabic system, we use ten digits: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9. A number is denoted by a group of digits, called a numeral.
 
-# 2. Divisibility Rules (Must Memorize)
-- **By 3:** Sum of digits is divisible by 3.
-- **By 4:** Last 2 digits are divisible by 4.
-- **By 8:** Last 3 digits are divisible by 8.
-- **By 9:** Sum of digits is divisible by 9.
-- **By 11:** Difference between sum of odd-place digits and even-place digits is 0 or multiple of 11.
+## Face Value & Place Value
+- **Face Value**: The face value of a digit in a numeral is its own value, at whatever place it may be. (e.g. Face value of 2 in 3254 is 2).
+- **Place Value**: The place value changes according to the position of the digit. (e.g. Place value of 2 in 3254 is 200).
 
-# 3. LCM and HCF Core Formulas
-- **LCM (Least Common Multiple):** Smallest number divisible by all given numbers.
-- **HCF (Highest Common Factor):** Largest number that divides all given numbers.
-- **Property 1:** Product of two numbers = LCM × HCF
-- **Property 2 for Fractions:**
-  - LCM of fractions = LCM of Numerators / HCF of Denominators
-  - HCF of fractions = HCF of Numerators / LCM of Denominators
+## Types of Numbers
+- **Natural Numbers**: Counting numbers {1, 2, 3, 4...}
+- **Whole Numbers**: All counting numbers together with zero {0, 1, 2, 3...}
+- **Integers**: All natural numbers, 0 and negative of counting numbers {-3, -2, -1, 0, 1, 2, 3...}
+- **Even Numbers**: A number divisible by 2.
+- **Odd Numbers**: A number not divisible by 2.
+- **Prime Numbers**: A number greater than 1 having exactly two factors, namely 1 and itself. (e.g. 2, 3, 5, 7, 11). Note: 2 is the only even prime number.
+- **Composite Numbers**: Numbers greater than 1 which are not prime.
+- **Co-Primes**: Two numbers whose H.C.F. is 1. (e.g. 2 and 3).
 
-# 4. Tricks for TCS NQT
-## Trick 1: Finding Remainders
-To find the remainder when xⁿ is divided by (x-1), the remainder is always 1.
-If divided by (x+1), remainder is 1 if n is even, and x if n is odd.
+## Tests of Divisibility
+- **Divisible by 2**: Unit digit is 0, 2, 4, 6, or 8.
+- **Divisible by 3**: Sum of digits is divisible by 3.
+- **Divisible by 4**: Number formed by last two digits is divisible by 4.
+- **Divisible by 5**: Unit digit is 0 or 5.
+- **Divisible by 6**: Divisible by both 2 and 3.
+- **Divisible by 8**: Number formed by last three digits is divisible by 8.
+- **Divisible by 9**: Sum of digits is divisible by 9.
+- **Divisible by 11**: Difference of the sum of its digits at odd places and sum of its digits at even places, is either 0 or a number divisible by 11.
 
-## Trick 2: Number of Factors
-Prime factorize N = a^p × b^q × c^r
-Total factors = (p+1)(q+1)(r+1)
+## Rules on Remainders
+- If we divide a given number by another number, then:
+**Dividend = (Divisor × Quotient) + Remainder**
 
-## Trick 3: Unit Digit Cyclicity
-Cyclicity of 2, 3, 7, 8 is 4.
-Cyclicity of 4, 9 is 2.
-Cyclicity of 0, 1, 5, 6 is 1 (always same).
+# Practice Questions
+**Q1. Find the unit digit in the product (459 × 46 × 28* × 484) if the unit digit is 2.**
+A) 3
+B) 5
+C) 7
+D) 8
 
-# 5. LCM/HCF Word Problem Patterns
-- "Find greatest number that divides a,b,c leaving remainders x,y,z" => HCF of (a-x), (b-y), (c-z)
-- "Find smallest number which when divided by a,b,c leaves remainder R" => LCM(a,b,c) + R
-- "Bells ringing together" => Find LCM of their intervals.
+**Q2. Which of the following numbers is completely divisible by 99?**
+A) 3572404
+B) 135792
+C) 913464
+D) 114345
 
-# 6. Practice Questions
-**Q1:** Find unit digit of 7¹⁰⁵.
-**Q2:** Find remainder when 17²⁰⁰ is divided by 18.
-**Q3:** Product of two numbers is 2028 and HCF is 13. Find number of such pairs.
-**Q4:** Find smallest number which when divided by 12, 15, 20 leaves remainder 5 in each case.
-**Q5:** Bells ring at intervals of 2, 4, 6, 8, 10, 12 seconds. In 30 mins, how many times they ring together?
-**Q6:** The HCF of 2/3, 8/9, 64/81, 10/27 is?
-**Q7:** Number of prime factors in (6)¹⁰ × (7)¹⁷ × (11)²⁷ ?
-**Q8:** Find greatest number dividing 122 and 243 leaving remainders 2 and 3 respectively.
-**Q9:** Total number of factors of 120?
-**Q10:** Which is largest: 2/3, 5/6, 11/15, 7/8?
+**Q3. If the number 517*324 is completely divisible by 3, then the smallest whole number in the place of * will be:**
+A) 0
+B) 1
+C) 2
+D) 4
 
-# 7. Answers
-**A1:** 105 / 4 gives remainder 1. 7¹ = 7. Unit digit is 7.
-**A2:** (x+1) case, even power. Remainder is 1.
-**A3:** Let numbers be 13x, 13y. 169xy = 2028 => xy = 12. Co-prime pairs of 12 are (1,12), (3,4). Two pairs.
-**A4:** LCM(12,15,20) = 60. Answer = 60 + 5 = 65.
-**A5:** LCM = 120 sec = 2 mins. In 30 mins = 30/2 + 1 (initial) = 16 times.
-**A6:** HCF(2,8,64,10) = 2. LCM(3,9,81,27) = 81. Ans = 2/81.
-**A7:** 6 = 2×3. So (2×3)¹⁰ = 2¹⁰ × 3¹⁰. Primes = 10+10+17+27 = 64.
-**A8:** HCF of (122-2) and (243-3) = HCF of 120 and 240 = 120.
-**A9:** 120 = 2³ × 3¹ × 5¹. Factors = (3+1)(1+1)(1+1) = 4×2×2 = 16.
-**A10:** LCM of denominators is 120. Fractions become 80/120, 100/120, 88/120, 105/120. 7/8 is largest.
+**Q4. The sum of first 45 natural numbers is:**
+A) 1035
+B) 1280
+C) 2070
+D) 2140
 
-# 8. Tips
-- Number system questions are often solved fastest by testing options (Option elimination).
+**Q5. A number when divided by 119 leaves remainder 19. If it is divided by 17, it will leave a remainder:**
+A) 19
+B) 10
+C) 7
+D) 2
+
+# Answers
+**A1.** 
+The unit digit of the product is the product of the unit digits of the numbers.
+Unit digits: 9, 6, *, 4.
+Product = 9 × 6 × * × 4 = 216 × *.
+Unit digit of 216 is 6.
+So, 6 × * should yield a unit digit of 2.
+6 × 2 = 12 (unit digit 2)
+6 × 7 = 42 (unit digit 2)
+From the options, 7 is the correct answer.
+
+**A2.** 
+For a number to be divisible by 99, it must be divisible by both 9 and 11.
+Checking D: 114345
+Sum of digits = 1 + 1 + 4 + 3 + 4 + 5 = 18 (Divisible by 9).
+Sum of digits at odd places = 5 + 3 + 1 = 9
+Sum of digits at even places = 4 + 4 + 1 = 9
+Difference = 9 - 9 = 0 (Divisible by 11).
+Hence, 114345 is divisible by 99.
+
+**A3.** 
+Sum of digits = 5 + 1 + 7 + * + 3 + 2 + 4 = 22 + *.
+For (22 + *) to be divisible by 3, the least value of * must be 2, because 22 + 2 = 24, which is divisible by 3.
+
+**A4.** 
+The sum of first n natural numbers is given by n(n+1)/2.
+Here, n = 45.
+Sum = 45(45+1)/2 = 45 × 46 / 2 = 45 × 23 = 1035.
+
+**A5.** 
+Let the number be x.
+x = 119q + 19
+x = 17 × 7q + 17 + 2
+x = 17(7q + 1) + 2
+So, when divided by 17, the remainder is 2.
+
+# Cheat Sheet
+- **Formula 1**: Dividend = (Divisor × Quotient) + Remainder
+- **Formula 2**: (a + b)² = a² + b² + 2ab
+- **Formula 3**: (a - b)² = a² + b² - 2ab
+- **Formula 4**: (a + b)² - (a - b)² = 4ab
+- **Formula 5**: (a + b)² + (a - b)² = 2(a² + b²)
+- **Formula 6**: a² - b² = (a + b)(a - b)
+- **Formula 7**: a³ + b³ = (a + b)(a² - ab + b²)
+- **Formula 8**: a³ - b³ = (a - b)(a² + ab + b²)
+- **Sum of first n natural numbers** = n(n+1)/2
+- **Sum of squares of first n natural numbers** = n(n+1)(2n+1)/6
+- **Sum of cubes of first n natural numbers** = [n(n+1)/2]²
 `
   },
   {
