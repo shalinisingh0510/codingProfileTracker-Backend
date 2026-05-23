@@ -30,16 +30,23 @@ const sendEmail = async ({ to, subject, html }) => {
             });
         }
 
-        const info = await transporter.sendMail({
+        // Wrap sendMail in a timeout because Render free tier blocks SMTP ports
+        // which causes the connection to hang indefinitely.
+        const sendMailPromise = transporter.sendMail({
             from: `"CodeProfile Tracker" <${process.env.EMAIL_USER || 'test@ethereal.email'}>`,
             to,
             subject,
             html
         });
 
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('SMTP connection timed out. This usually means your hosting provider (like Render Free Tier) blocks outbound email ports.')), 4000);
+        });
+
+        const info = await Promise.race([sendMailPromise, timeoutPromise]);
+
         console.log(`[Email] Sent to ${to}: ${subject}`);
         
-        // If we used ethereal, log the URL to view the message
         if (!process.env.EMAIL_USER) {
             console.log(`📧 Test Email URL: ${nodemailer.getTestMessageUrl(info)}`);
         }
