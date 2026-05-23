@@ -205,6 +205,8 @@ const resetPassword = async (req, res) => {
         console.error('[Auth] Reset password error:', error.message);
         res.status(500).json({ message: error.message });
     }
+};
+
 // @desc    Auth user with Google
 // @route   POST /api/auth/google
 // @access  Public
